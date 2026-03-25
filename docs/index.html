@@ -742,6 +742,9 @@ input,select,textarea{font-family:inherit;font-size:12px}
       <div class="field std"><label>Container</label><input type="text" id="vd_dnx_cont" value="OP-Atom MXF"></div>
       <div class="field std"><label>Resolution</label><input type="text" id="vd_dnx_res" value="HD 1920×1080 · 25fps"></div>
     </div>
+    <div class="fg g1">
+      <div class="field std"><label>Color Space</label><input type="text" id="vd_dnx_cs" value="Rec.709 + Show LUT baked in, blanked to aspect ratio"></div>
+    </div>
 
     <div class="sub-hdr">Final EXR (outgoing from Vendor)</div>
     <div class="fg g3">
@@ -1053,7 +1056,7 @@ function generate(aud){
   const ftAvid=gv('ft_avid'),ftCounts=h(rv('ft_counts'));
 
   const vdH2C=h(gv('vd_h2_c')),vdH2R=h(gv('vd_h2_r')),vdH2CS=h(gv('vd_h2_cs'));
-  const vdDnx=h(rv('vd_dnx')),vdDnxCont=h(gv('vd_dnx_cont')),vdDnxRes=h(gv('vd_dnx_res'));
+  const vdDnx=h(rv('vd_dnx')),vdDnxCont=h(gv('vd_dnx_cont')),vdDnxRes=h(gv('vd_dnx_res')),vdDnxCS=h(gv('vd_dnx_cs'));
   const vdExrCS=h(rv('vd_exr_cs')),vdExrRes=h(gv('vd_exr_res'));
   const vdExrWhen=gv('vd_exr_when')||'finals_only';
   const vdAlpha=h(rv('vd_alpha'));
@@ -1378,7 +1381,7 @@ ${showFor(['VND'])?`
   <thead><tr><th>Deliverable</th><th>Spec</th></tr></thead>
   <tbody>
     <tr><td class="lbl">H264 / MP4 Preview</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS}</td></tr>
-    <tr><td class="lbl">DNxHD MXF (Editorial)</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes}</td></tr>
+    <tr><td class="lbl">DNxHD MXF (Editorial)</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
     <tr><td class="lbl">EXR</td><td>Main plate with retimes &amp; repos applied · no handles</td></tr>
   </tbody>
 </table>
@@ -1389,7 +1392,7 @@ ${showFor(['VND'])?`
   <tbody>
     <tr><td class="lbl">Preview</td><td>MP4 / MOV</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS} · blanked to ${aspect}</td></tr>
     <tr><td class="lbl">Mini Cuts</td><td>MP4 / MOV</td><td>At least one shot before and after reviewed range – on request</td></tr>
-    <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes}</td></tr>
+    <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
     <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · no handles${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
     <tr><td class="lbl">Alpha / Mattes</td><td colspan="2">${vdAlpha} – required for: screen inserts, sky replacements, bg inserts, set extensions, full CG</td></tr>
     <tr><td class="lbl">Submission Sheet</td><td>.csv</td><td>Shot Name · Version Name · Scope of Work · Vendor · Submitting For · Notes</td></tr>
@@ -1610,6 +1613,7 @@ function collectSheetData(){
     'DNxHD Codec'                              : rv('vd_dnx'),
     'DNxHD Container'                          : gv('vd_dnx_cont'),
     'DNxHD Resolution'                         : gv('vd_dnx_res'),
+    'DNxHD Color Space'                        : gv('vd_dnx_cs'),
     'EXR Delivery Timing'                      : gv('vd_exr_when'),
     'EXR Output Color Space'                   : rv('vd_exr_cs'),
     'EXR Output Resolution'                    : gv('vd_exr_res'),
@@ -1863,6 +1867,7 @@ function populateFromSheet(d){
   s('vd_dnx',     d['DNxHD Codec']);
   s('vd_dnx_cont',d['DNxHD Container']);
   s('vd_dnx_res', d['DNxHD Resolution']);
+  s('vd_dnx_cs',  d['DNxHD Color Space']);
   s('vd_exr_when',d['EXR Delivery Timing']);
   s('vd_exr_cs',  d['EXR Output Color Space']);
   s('vd_exr_res', d['EXR Output Resolution']);
