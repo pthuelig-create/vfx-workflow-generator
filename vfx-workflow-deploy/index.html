@@ -1,0 +1,1944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VFX Workflow Generator – WestFX</title>
+<style>
+/* ── RESET ─────────────────────────────────────────────────────────────────── */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:Arial,Helvetica,sans-serif;font-size:13px;background:#eef1f5;color:#222}
+input,select,textarea{font-family:inherit;font-size:12px}
+
+/* ── FORM LAYOUT ───────────────────────────────────────────────────────────── */
+#form-view{max-width:980px;margin:0 auto;padding:24px 16px 80px}
+.page-header{background:#1F3864;color:#fff;border-radius:8px;padding:22px 28px;margin-bottom:20px}
+.page-header h1{font-size:21px;font-weight:700;margin-bottom:3px}
+.page-header p{font-size:11px;opacity:.7}
+
+.legend{display:flex;gap:18px;margin-bottom:18px;flex-wrap:wrap}
+.legend-item{display:flex;align-items:center;gap:6px;font-size:11px;color:#555}
+.leg-dot{width:13px;height:13px;border-radius:3px;flex-shrink:0}
+.d-std{background:#d4edbb;border:1px solid #82b25a}
+.d-var{background:#fff2cc;border:1px solid #d4a800}
+
+/* Accordion */
+.section{background:#fff;border-radius:8px;margin-bottom:12px;box-shadow:0 1px 5px rgba(0,0,0,.09);overflow:hidden}
+.sec-hdr{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;cursor:pointer;user-select:none;background:#1F3864;color:#fff}
+.sec-hdr h2{font-size:12.5px;font-weight:700;letter-spacing:.3px}
+.sec-hdr .arr{font-size:11px;transition:transform .2s}
+.sec-hdr.open .arr{transform:rotate(180deg)}
+.sec-body{padding:16px 18px;display:none}
+.sec-body.open{display:block}
+
+/* Fields */
+.fg{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;margin-bottom:10px}
+.fg.g1{grid-template-columns:1fr}
+.fg.g3{grid-template-columns:1fr 1fr 1fr}
+.fg.g4{grid-template-columns:1fr 1fr 1fr 1fr}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:11px;font-weight:700;color:#444}
+.field label .hint{font-weight:400;color:#999;font-style:italic;margin-left:4px;font-size:10px}
+.field input,.field select,.field textarea{border:1px solid #ccc;border-radius:4px;padding:6px 8px;background:#fff;outline:none;width:100%;transition:border-color .15s}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:#2E75B6}
+.field textarea{resize:vertical;min-height:48px}
+.field .other-inp{display:none;margin-top:5px;border:1px solid #f0c030;border-radius:4px;padding:6px 8px;width:100%;background:#fffdf5;font-size:11px}
+.field .other-inp.show{display:block}
+.std input,.std select,.std textarea{background:#f3faec;border-color:#a8d08d}
+.var input,.var select,.var textarea{background:#fffdf0;border-color:#e8c840}
+
+/* Sub elements */
+.sub-hdr{font-size:11px;font-weight:700;color:#2E75B6;margin:14px 0 7px;text-transform:uppercase;letter-spacing:.5px;border-bottom:1px solid #dce8f5;padding-bottom:3px}
+.repeat-block{border:1px solid #e0e0e0;border-radius:6px;padding:12px 12px 10px;margin-bottom:9px;background:#fafafa;position:relative}
+.rm-btn{position:absolute;top:8px;right:10px;background:none;border:none;color:#c00;cursor:pointer;font-size:15px;line-height:1}
+.add-btn{background:#2E75B6;color:#fff;border:none;border-radius:4px;padding:6px 14px;cursor:pointer;font-size:11px;font-weight:700;margin-top:5px}
+.add-btn:hover{background:#1a5090}
+.sub-table{width:100%;border-collapse:collapse;margin-top:5px;font-size:11px}
+.sub-table th{background:#e8f0f8;padding:5px 8px;text-align:left;border:1px solid #ccc;font-weight:700}
+.sub-table td{padding:3px 6px;border:1px solid #ddd}
+.sub-table td input{border:none;background:transparent;width:100%;padding:2px 3px;font-size:11px}
+.sub-table td input:focus{outline:1px solid #2E75B6;border-radius:2px}
+.sub-table tr:nth-child(even){background:#f8f8f8}
+.add-row-btn{background:#6c757d;color:#fff;border:none;border-radius:3px;padding:3px 10px;cursor:pointer;font-size:10px;margin-top:4px}
+
+.info-box{background:#e8f4fd;border:1px solid #90c4e8;border-radius:5px;padding:9px 12px;font-size:11px;color:#1a4870;margin:8px 0}
+.warn-box{background:#fff8e1;border:1px solid #f0c030;border-radius:5px;padding:9px 12px;font-size:11px;color:#5a4000;margin:8px 0}
+
+/* ── SHEET-LOADED HIGHLIGHT ─────────────────────────────────────────────────── */
+@keyframes sheetPop {
+  0%   { box-shadow:0 0 0 0 rgba(26,138,110,.55); }
+  60%  { box-shadow:0 0 0 7px rgba(26,138,110,0); }
+  100% { box-shadow:0 0 0 0 rgba(26,138,110,0); }
+}
+.sheet-loaded {
+  border-color:#1a8a6e !important;
+  background:#e6f9f3 !important;
+  animation:sheetPop .8s ease-out;
+  transition:border-color .4s, background .4s;
+}
+/* Banner shown after load */
+#load-banner{
+  position:fixed;top:0;left:0;right:0;z-index:300;
+  background:#1a8a6e;color:#fff;
+  padding:9px 18px;font-size:12px;font-weight:700;
+  display:flex;align-items:center;gap:10px;
+  box-shadow:0 2px 8px rgba(0,0,0,.25);
+  transform:translateY(-100%);transition:transform .3s ease;
+}
+#load-banner.show{transform:translateY(0)}
+#load-banner .lbclose{margin-left:auto;cursor:pointer;font-size:15px;opacity:.7}
+#load-banner .lbclose:hover{opacity:1}
+
+/* Fixed bottom bar */
+.gen-bar{position:fixed;bottom:0;left:0;right:0;background:#1F3864;padding:11px 24px;display:flex;justify-content:center;gap:12px;box-shadow:0 -2px 10px rgba(0,0,0,.25);z-index:200}
+.gen-btn{background:#2E75B6;color:#fff;border:none;border-radius:6px;padding:10px 28px;font-size:13px;font-weight:700;cursor:pointer;letter-spacing:.2px}
+.gen-btn:hover{background:#1a5090}
+.gen-btn.sec{background:#555}
+.gen-btn.sec:hover{background:#333}
+
+/* ── PREVIEW VIEW ──────────────────────────────────────────────────────────── */
+#preview-view{display:none}
+.prev-ctrl{background:#1F3864;color:#fff;padding:11px 24px;display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:200}
+.prev-ctrl h2{font-size:13px;flex:1}
+.cbtn{background:#2E75B6;color:#fff;border:none;border-radius:5px;padding:7px 16px;font-size:12px;font-weight:700;cursor:pointer}
+.cbtn.back{background:#555}
+.cbtn:hover{opacity:.85}
+
+/* ── GENERATED SHEET ───────────────────────────────────────────────────────── */
+#sheet{max-width:880px;margin:0 auto;padding:30px 24px 60px;background:#fff}
+
+/* Cover */
+.cv{text-align:center;padding:40px 20px 28px;border-bottom:3px solid #1F3864;margin-bottom:30px}
+.cv-title{font-size:26px;font-weight:900;color:#1F3864;text-transform:uppercase;letter-spacing:1px;line-height:1.2}
+.cv-sub{font-size:14px;color:#2E75B6;margin-top:7px}
+.cv-meta{font-size:10.5px;color:#888;margin-top:10px;line-height:1.7}
+.cv-badges{display:flex;gap:8px;justify-content:center;margin-top:14px;flex-wrap:wrap}
+.badge{padding:3px 11px;border-radius:12px;font-size:9.5px;font-weight:700;letter-spacing:.3px}
+.b-ed {background:#dce9f8;color:#1a4e8a}
+.b-vnd{background:#e2f0d9;color:#375623}
+.b-di {background:#fce4d6;color:#843c0c}
+
+/* Audience overview table */
+.aud-table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:11px}
+.aud-table th{padding:7px 10px;text-align:left;font-weight:700;font-size:10px;text-transform:uppercase;letter-spacing:.4px}
+.aud-table td{padding:6px 10px;border:1px solid #e0e0e0;vertical-align:top;line-height:1.4}
+.aud-table .ah-ed {background:#dce9f8;color:#1a4e8a}
+.aud-table .ah-vnd{background:#e2f0d9;color:#375623}
+.aud-table .ah-di {background:#fce4d6;color:#843c0c}
+.check{color:#2e7d32;font-weight:700}
+.dash{color:#bbb}
+
+/* Sheet headings */
+.sh1{font-size:14px;font-weight:900;color:#fff;background:#1F3864;padding:8px 14px;border-radius:4px;margin:24px 0 12px;text-transform:uppercase;letter-spacing:.5px}
+.sh2{font-size:11.5px;font-weight:700;color:#1F3864;border-bottom:2px solid #2E75B6;padding-bottom:3px;margin:14px 0 8px;text-transform:uppercase;letter-spacing:.4px}
+.sh-p{font-size:11.5px;line-height:1.65;margin-bottom:8px;color:#333}
+
+/* Sheet tables */
+.sht{width:100%;border-collapse:collapse;margin-bottom:12px;font-size:11px}
+.sht th{background:#2E75B6;color:#fff;padding:6px 10px;text-align:left;font-weight:700;font-size:10.5px}
+.sht td{padding:5px 10px;border:1px solid #ddd;vertical-align:top;line-height:1.45}
+.sht tr:nth-child(even) td{background:#f7f9fc}
+.lbl{font-weight:700;color:#1F3864;white-space:nowrap}
+.mono{font-family:'Courier New',monospace;font-size:10.5px}
+.note{font-size:10px;color:#888;font-style:italic}
+
+/* EXR comparison */
+.exr-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px}
+.exr-box{border:1px solid #ccc;border-radius:6px;overflow:hidden}
+.exr-box-hdr{padding:7px 12px;font-size:11px;font-weight:700;color:#fff}
+.exr-in-hdr{background:#2E75B6}
+.exr-out-hdr{background:#375623}
+.exr-box table{width:100%;font-size:10.5px;border-collapse:collapse}
+.exr-box table td{padding:4px 10px;border-bottom:1px solid #eee}
+.exr-box table td:first-child{font-weight:700;color:#444;white-space:nowrap}
+
+/* Naming pills */
+.pill{display:inline-block;padding:3px 8px;border-radius:4px;font-family:monospace;font-size:11px;margin:2px;font-weight:700}
+.p-code {background:#dce9f8;color:#1a4e8a}
+.p-ep   {background:#e8f5e9;color:#1b5e20}
+.p-scene{background:#fff3e0;color:#e65100}
+.p-shot {background:#fce4d6;color:#843c0c}
+.p-ident{background:#f3e5f5;color:#6a1b9a}
+.p-vend {background:#e0f2f1;color:#004d40}
+.p-ver  {background:#e8eaf6;color:#283593}
+.p-frame{background:#f5f5f5;color:#616161}
+.p-sep  {color:#999;font-size:13px;margin:0 1px}
+.p-ext  {background:#ffebee;color:#b71c1c}
+
+/* Workflow steps */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{display:flex;align-items:flex-start;gap:10px;padding:7px 0;border-bottom:1px solid #f0f0f0}
+.step-num{background:#2E75B6;color:#fff;border-radius:50%;width:21px;height:21px;display:flex;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;flex-shrink:0;margin-top:1px}
+.step-txt{font-size:11.5px;line-height:1.55}
+
+/* Inline audience badge */
+.aud-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;margin-left:6px;vertical-align:middle}
+
+/* ── PRINT ─────────────────────────────────────────────────────────────────── */
+@media print{
+  #form-view,.prev-ctrl,.gen-bar{display:none!important}
+  #preview-view{display:block!important}
+  #sheet{padding:0;max-width:100%}
+  .cv{padding:20px 0}
+  body{background:#fff;font-size:10.5px;orphans:3;widows:3}
+  .sh1{-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid}
+  .sh2{page-break-after:avoid;break-after:avoid}
+  .sht{page-break-inside:avoid;break-inside:avoid}
+  .sht th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .aud-table{page-break-inside:avoid;break-inside:avoid}
+  .aud-table th{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .exr-grid{page-break-inside:avoid;break-inside:avoid}
+  .exr-box{page-break-inside:avoid;break-inside:avoid}
+  .exr-box-hdr{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .step{page-break-inside:avoid;break-inside:avoid}
+  .step-num{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .repeat-block{page-break-inside:avoid;break-inside:avoid}
+  tr{page-break-inside:avoid;break-inside:avoid}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     FORM
+══════════════════════════════════════════════════════════════════════════ -->
+<!-- Sheet-load banner -->
+<div id="load-banner">
+  <span>📋</span>
+  <span id="load-banner-msg"></span>
+  <span style="opacity:.7;font-weight:400;font-size:11px">  Green fields = loaded from Sheet. Edit any field to clear its highlight.</span>
+  <span class="lbclose" onclick="document.getElementById('load-banner').classList.remove('show')">✕</span>
+</div>
+
+<div id="form-view">
+
+<div class="page-header">
+  <h1>VFX Workflow Generator</h1>
+  <p>WestFX · Fill in once → generate complete Workflow Sheet as PDF</p>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="leg-dot d-std"></div> Pre-filled standard value – edit only if project differs</div>
+  <div class="legend-item"><div class="leg-dot d-var"></div> Project-specific – must be filled in</div>
+</div>
+
+<!-- ── 01 PROJECT INFO ──────────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr open" onclick="tog(this)"><h2>01 · Project Information</h2><span class="arr">▼</span></div>
+  <div class="sec-body open">
+    <div class="fg">
+      <div class="field var">
+        <label>Project Title (full) <span class="hint">e.g. "The Tiger"</span></label>
+        <input type="text" id="proj_title" placeholder="Full project title">
+      </div>
+      <div class="field var">
+        <label>Show Code <span class="hint">3–4 chars, used in all filenames</span></label>
+        <input type="text" id="proj_code" placeholder="e.g. CRI, HLG, TIG, SEL" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+      </div>
+      <div class="field var">
+        <label>Project Type</label>
+        <select id="proj_type" onchange="toggleFeature()">
+          <option value="Series">Series</option>
+          <option value="Feature Film">Feature Film</option>
+          <option value="Short Film">Short Film</option>
+          <option value="Documentary">Documentary</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="proj_type_other" placeholder="Specify project type…">
+      </div>
+      <div class="field var">
+        <label>Broadcaster / Studio / Client</label>
+        <input type="text" id="proj_client" placeholder="e.g. Netflix, Sky, Amazon Studios, ORF">
+      </div>
+      <div class="field var">
+        <label>Production Company</label>
+        <input type="text" id="proj_production" placeholder="e.g. Hepp Film GmbH">
+      </div>
+      <div class="field std">
+        <label>Base Framerate</label>
+        <select id="proj_fps" onchange="chkOther(this)">
+          <option>25 fps</option>
+          <option>24 fps</option>
+          <option>23.976 fps</option>
+          <option>30 fps</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="proj_fps_other" placeholder="e.g. 29.97 fps">
+      </div>
+    </div>
+    <div id="series-fields">
+      <div class="fg">
+        <div class="field var">
+          <label>Season / Episode Info <span class="hint">Series only</span></label>
+          <input type="text" id="proj_season" placeholder="e.g. Season 2 · E101–E106">
+        </div>
+        <div class="field var">
+          <label>Episode Number Format in Filenames <span class="hint">Series only</span></label>
+          <select id="proj_ep_format" onchange="chkOther(this)">
+            <option value="E###">E### – with E-prefix (e.g. E101, E102…)</option>
+            <option value="###">### – three digits, no prefix (e.g. 101, 102…)</option>
+            <option value="S##E##">S##E## – full season+episode (e.g. S02E01)</option>
+            <option value="__other__">Other (specify)</option>
+          </select>
+          <input class="other-inp" id="proj_ep_format_other" placeholder="e.g. no episode number / custom format…">
+        </div>
+      </div>
+    </div>
+    <div class="fg g3">
+      <div class="field var">
+        <label>Document Version</label>
+        <input type="text" id="doc_ver" placeholder="e.g. v01">
+      </div>
+      <div class="field var">
+        <label>Date</label>
+        <input type="date" id="doc_date">
+      </div>
+      <div class="field var">
+        <label>Document Author</label>
+        <input type="text" id="doc_author" placeholder="e.g. Patrick Thülig, VFX Coordinator">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 02 CONTACTS ──────────────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr" onclick="tog(this)"><h2>02 · Contacts</h2><span class="arr">▼</span></div>
+  <div class="sec-body">
+
+    <div class="sub-hdr">WestFX Team</div>
+    <div class="fg g3">
+      <div class="field std"><label>VFX Coordinator</label><input type="text" id="c_co_n" value="Patrick Thülig"></div>
+      <div class="field std"><label>Email</label><input type="text" id="c_co_e" value="patrick@westfx.net"></div>
+      <div class="field std"><label>Phone</label><input type="text" id="c_co_t" value="+49 171 690 50 86"></div>
+      <div class="field std"><label>VFX Producer</label><input type="text" id="c_pr_n" value="Christopher Lenke"></div>
+      <div class="field std"><label>Email</label><input type="text" id="c_pr_e" value="christopher@westfx.net"></div>
+      <div class="field std"><label>Phone</label><input type="text" id="c_pr_t" value="+49 176 820 714 36"></div>
+      <div class="field var"><label>VFX Supervisor <span class="hint">optional</span></label><input type="text" id="c_su_n" placeholder="Name"></div>
+      <div class="field var"><label>Email</label><input type="text" id="c_su_e" placeholder=""></div>
+      <div class="field var"><label>Phone</label><input type="text" id="c_su_t" placeholder=""></div>
+      <div class="field var"><label>VFX Editor</label><input type="text" id="c_ed_n" placeholder="Name"></div>
+      <div class="field var"><label>Email</label><input type="text" id="c_ed_e" placeholder=""></div>
+      <div class="field var"><label>Phone</label><input type="text" id="c_ed_t" placeholder=""></div>
+      <div class="field std"><label>VFX QC</label><input type="text" id="c_qc_n" value="Alexander du Prél"></div>
+      <div class="field std"><label>Email</label><input type="text" id="c_qc_e" value="qc@kinolaboratorium.de"></div>
+      <div class="field std"><label>Phone</label><input type="text" id="c_qc_t" value="+49 30 30132675"></div>
+    </div>
+
+    <div class="sub-hdr">Post Facility / DI</div>
+    <div class="fg g3">
+      <div class="field var"><label>Post Facility / DI House</label><input type="text" id="c_di_h" placeholder="e.g. Basis Berlin, PFX Berlin"></div>
+      <div class="field var"><label>DI Engineer (Name)</label><input type="text" id="c_di_n" placeholder="Name"></div>
+      <div class="field var"><label>Email / Phone</label><input type="text" id="c_di_c" placeholder=""></div>
+      <div class="field var"><label>Post Producer</label><input type="text" id="c_pp_n" placeholder="Name"></div>
+      <div class="field var"><label>Email</label><input type="text" id="c_pp_e" placeholder=""></div>
+      <div class="field var"><label>Phone</label><input type="text" id="c_pp_t" placeholder=""></div>
+      <div class="field var"><label>Post Supervisor</label><input type="text" id="c_ps_n" placeholder="Name"></div>
+      <div class="field var"><label>Email</label><input type="text" id="c_ps_e" placeholder=""></div>
+      <div class="field var"><label>Phone</label><input type="text" id="c_ps_t" placeholder=""></div>
+    </div>
+
+    <div class="sub-hdr">VFX Vendors</div>
+    <div id="vendors-list"></div>
+    <button class="add-btn" onclick="addVendor()">+ Add Vendor</button>
+
+    <div class="sub-hdr">Distro Lists</div>
+    <div class="fg">
+      <div class="field var">
+        <label>PULL Distro (emails, comma-separated)</label>
+        <textarea id="pull_distro" rows="3" placeholder="editor@…, vfxeditor@…, postproducer@…"></textarea>
+      </div>
+      <div class="field var">
+        <label>SUBMISSION Distro (emails, comma-separated)</label>
+        <textarea id="sub_distro" rows="3" placeholder="christopher@westfx.net, patrick@westfx.net, qc@…"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 03 CAMERA & FORMAT ───────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr" onclick="tog(this)"><h2>03 · Camera & Technical Specs</h2><span class="arr">▼</span></div>
+  <div class="sec-body">
+
+    <div class="sub-hdr">Primary Camera</div>
+    <div class="fg g3">
+      <div class="field var"><label>Camera ID <span class="hint">e.g. A-CAM, CAM1</span></label><input type="text" id="cam_id" placeholder="e.g. A-CAM"></div>
+      <div class="field var"><label>Camera Body</label><input type="text" id="cam_body" placeholder="e.g. Sony Venice 2, Arri Mini LF"></div>
+      <div class="field var"><label>Native Capture Resolution</label><input type="text" id="cam_res" placeholder="e.g. 6048×4032"></div>
+      <div class="field var"><label>VFX Pull Resolution <span class="hint">wenn abweichend von Native</span></label><input type="text" id="cam_pull_res" placeholder="e.g. 4448×3096"></div>
+      <div class="field var">
+        <label>Recording Color Space</label>
+        <select id="cam_cs" onchange="chkOther(this)">
+          <option>S-Gamut3.Cine / S-Log3</option>
+          <option>S-Gamut3 / S-Log3</option>
+          <option>ArriLogC3 Wide Gamut</option>
+          <option>ArriLogC4 Wide Gamut</option>
+          <option>D-Gamut / D-Log M</option>
+          <option>Red Wide Gamut RGB / Log3G10</option>
+          <option>BRAW Wide Gamut / Blackmagic Film Gen5</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="cam_cs_other" placeholder="Specify color space…">
+      </div>
+      <div class="field var">
+        <label>Lens Type</label>
+        <select id="cam_lens" onchange="chkOther(this)">
+          <option value="Spherical">Spherical</option>
+          <option value="Anamorphic 1.3×">Anamorphic 1.3×</option>
+          <option value="Anamorphic 2× (squeeze factor 2:1)">Anamorphic 2× (squeeze factor 2:1)</option>
+          <option value="Mixed – spherical and anamorphic">Mixed – spherical and anamorphic</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="cam_lens_other" placeholder="Specify lens type…">
+      </div>
+      <div class="field std"><label>Preview / Dailies Color Space</label><input type="text" id="cam_dailies" value="SDR – ITU-BT.709 / Gamma 2.4"></div>
+      <div class="field var"><label>Show LUT / CDL description <span class="hint">brief</span></label><input type="text" id="cam_lut" placeholder="e.g. DIT Resolve project handed over, .cube via FTP"></div>
+    </div>
+
+    <div class="sub-hdr">Additional Cameras <span style="font-weight:400;font-size:10px;color:#999">(optional)</span></div>
+    <table class="sub-table">
+      <thead><tr><th>Camera ID</th><th>Body</th><th>Native Res.</th><th>VFX Pull Res.</th><th>Color Space / Gamma</th><th></th></tr></thead>
+      <tbody id="extra-cams"></tbody>
+    </table>
+    <button class="add-row-btn" onclick="addCamRow()">+ Add row</button>
+
+    <div class="sub-hdr">Image Format & Delivery</div>
+    <div class="fg g3">
+      <div class="field var">
+        <label>Presentation Aspect Ratio</label>
+        <select id="fmt_aspect" onchange="chkOther(this)">
+          <option value="2.39:1">2.39:1 (Cinemascope)</option>
+          <option value="2.25:1">2.25:1</option>
+          <option value="1.85:1">1.85:1</option>
+          <option value="1.78:1">1.78:1 (16:9)</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="fmt_aspect_other" placeholder="e.g. 1.33:1">
+      </div>
+      <div class="field var">
+        <label>Delivery Container Format</label>
+        <select id="fmt_container" onchange="chkOther(this)">
+          <option value="NONE">NONE</option>
+          <option>UHD 3840×2160</option>
+          <option>DCI 4K 4096×2160</option>
+          <option>HD 1920×1080</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="fmt_container_other" placeholder="e.g. 4096×3432">
+      </div>
+      <div class="field var"><label>Active Picture Area</label><input type="text" id="fmt_active" placeholder="e.g. 3840×1608"></div>
+      <div class="field var">
+        <label>VFX Plate / EXR Delivery Resolution</label>
+        <select id="fmt_vfx_res" onchange="chkOther(this)">
+          <option value="Source Resolution (no scaling)">Source Resolution – no scaling</option>
+          <option value="UHD 3840×2160 (scaled)">UHD 3840×2160 – scaled if above</option>
+          <option value="Max 4.6K – scale down if native exceeds 4608px">Max 4.6K – scale down if native exceeds 4608px width</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="fmt_vfx_res_other" placeholder="e.g. scale to 4448×3096 if >4.6K">
+      </div>
+      <div class="field var">
+        <label>Final Show Delivery Resolution</label>
+        <input type="text" id="fmt_final_del" placeholder="e.g. UHD 3840×2160 / DCI 4K 4096×2160">
+      </div>
+      <div class="field var">
+        <label>Primary Grade</label>
+        <select id="fmt_grade" onchange="chkOther(this)">
+          <option value="SDR">SDR</option>
+          <option value="HDR">HDR</option>
+          <option value="SDR + HDR">SDR + HDR</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="fmt_grade_other" placeholder="Specify…">
+      </div>
+    </div>
+
+    <div class="sub-hdr">Color Pipeline</div>
+    <div class="fg g3">
+      <div class="field var">
+        <label>Plate Color Space (EXR incoming from DI)</label>
+        <select id="col_plate" onchange="chkOther(this)">
+          <option>ACES AP0 Linear</option>
+          <option>ACES AP1 / ACEScg 1.2 Linear</option>
+          <option>ACEScg</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="col_plate_other" placeholder="Specify incoming color space…">
+      </div>
+      <div class="field std">
+        <label>VFX Working Color Space</label>
+        <select id="col_work" onchange="chkOther(this)">
+          <option>ACEScg</option>
+          <option>ACES AP0 Linear</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="col_work_other" placeholder="Specify…">
+      </div>
+      <div class="field var">
+        <label>EXR Output Color Space (outgoing to DI)</label>
+        <select id="col_out" onchange="chkOther(this)">
+          <option>ACES AP0 Linear</option>
+          <option>ACES AP1 / ACEScg 1.2 Linear</option>
+          <option>ACEScg</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="col_out_other" placeholder="Specify outgoing color space…">
+      </div>
+      <div class="field std"><label>EXR Format (always)</label><input type="text" id="col_exr" value="OpenEXR · 16bit linear half float · PIZ compressed"></div>
+      <div class="field std"><label>Preview Color Space (H264 / QT)</label><input type="text" id="col_prev" value="Rec.709 / BT.1886 + Show LUT baked in"></div>
+      <div class="field var">
+        <label>Broadcast Delivery Color Space</label>
+        <select id="col_bcast" onchange="chkOther(this)">
+          <option>SDR Rec.709 / BT.1886</option>
+          <option>HDR Rec.2020 / PQ</option>
+          <option>HDR Rec.2020 / HLG</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="col_bcast_other" placeholder="Specify…">
+      </div>
+    </div>
+
+    <div class="sub-hdr">Technical Checklist</div>
+    <div class="fg g4">
+      <div class="field var">
+        <label>Framing Charts received</label>
+        <select id="tc_framing"><option value="Yes">Yes</option><option value="No">No</option><option value="TBD">TBD</option></select>
+      </div>
+      <div class="field var">
+        <label>Lens Grids received</label>
+        <select id="tc_lens_grid"><option value="Yes">Yes</option><option value="No">No</option><option value="TBD">TBD</option></select>
+      </div>
+      <div class="field var">
+        <label>CDL Values available</label>
+        <select id="tc_cdl"><option value="Yes">Yes</option><option value="No">No</option><option value="TBD">TBD</option></select>
+      </div>
+      <div class="field var">
+        <label>Show / Seq / Shot LUTs</label>
+        <select id="tc_lut" onchange="chkOther(this)">
+          <option value="Show LUT">Show LUT</option>
+          <option value="Show + Shot LUTs">Show + Shot LUTs</option>
+          <option value="Show + Sequence LUTs">Show + Sequence LUTs</option>
+          <option value="No LUTs – eye match to editorial ref">No LUTs – eye match to editorial ref</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="tc_lut_other" placeholder="Specify LUT workflow…">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 04 NAMING CONVENTION ─────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr" onclick="tog(this)"><h2>04 · Naming Convention</h2><span class="arr">▼</span></div>
+  <div class="sec-body">
+
+    <div class="sub-hdr">Marker Naming <span style="font-weight:400;font-size:10px;color:#999">(Editorial)</span></div>
+    <div class="info-box">🎬 VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot). Das Namensschema wird automatisch aus der Naming Convention übernommen.</div>
+
+    <div class="info-box" style="margin-top:14px">
+      📌 <strong>Scene = Scene number</strong> from the screenplay / script (3 digits, e.g. 001, 042, 115). <strong>Shot</strong> = shot number within that scene, in steps of 10 (010, 020 …). Version numbers must be unique and never reused. QT and EXR always share the same version number.
+    </div>
+    <div class="fg g3">
+      <div class="field var">
+        <label>Version Number Padding</label>
+        <select id="nm_ver" onchange="chkOther(this)">
+          <option value="v###">v### – 3 digits (standard: CRI, HLG, TIG)</option>
+          <option value="v####">v#### – 4 digits (e.g. Seelendorf)</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="nm_ver_other" placeholder="Specify version format…">
+      </div>
+      <div class="field std"><label>Frame Number Padding</label><input type="text" id="nm_frame" value="4 digits – starts at 1001 (.1001.exr)"></div>
+      <div class="field std"><label>Shot Number Increments</label><input type="text" id="nm_steps" value="010, 020, 030 … (steps of 10)"></div>
+      <div class="field var">
+        <label>Sequence Level in Shot Name <span class="hint">optional – e.g. GLM_BEG_001_0010</span></label>
+        <select id="nm_seq" onchange="toggleSeqCode()">
+          <option value="No">No – Scene directly after Show Code / Episode (standard)</option>
+          <option value="Yes">Yes – Sequence code between Episode and Scene</option>
+        </select>
+      </div>
+      <div class="field var" id="nm_seq_code_wrap" style="display:none">
+        <label>Example Sequence Code <span class="hint">e.g. BEG, INT, EXT – used in naming</span></label>
+        <input type="text" id="nm_seq_code" placeholder="e.g. BEG" maxlength="8" oninput="this.value=this.value.toUpperCase()">
+      </div>
+    </div>
+
+    <div class="sub-hdr">Plate Idents</div>
+    <table class="sub-table">
+      <thead><tr><th>Code</th><th>Description</th><th></th></tr></thead>
+      <tbody id="idents-body">
+        <tr><td><input type="text" value="mp#"></td><td><input type="text" value="Main Plate"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="bg#"></td><td><input type="text" value="Background Plate"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="el#"></td><td><input type="text" value="Element Plate"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="cp#"></td><td><input type="text" value="Clean Plate"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="chart#"></td><td><input type="text" value="Grey Ball / Colour Chart Plate"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="ref#"></td><td><input type="text" value="Reference Plate"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="zero"></td><td><input type="text" value="Version Zero"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+      </tbody>
+    </table>
+    <button class="add-row-btn" onclick="addIdentRow()">+ Add ident</button>
+
+    <div class="sub-hdr">Task Types (Vendor Shot Versions)</div>
+    <table class="sub-table">
+      <thead><tr><th>Code</th><th>Description</th><th></th></tr></thead>
+      <tbody id="tasks-body">
+        <tr><td><input type="text" value="comp"></td><td><input type="text" value="Compositing"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="anim"></td><td><input type="text" value="Animation"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="env"></td><td><input type="text" value="Environment / Set Extension"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="fx"></td><td><input type="text" value="FX / CFX Simulation"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="roto"></td><td><input type="text" value="Rotoscoping"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="track"></td><td><input type="text" value="Tracking / Matchmove"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="paint"></td><td><input type="text" value="Paint / Cleanup"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="ldev"></td><td><input type="text" value="Lookdev"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="model"></td><td><input type="text" value="Modelling"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="pviz"></td><td><input type="text" value="Pre- / Postvis"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="zero"></td><td><input type="text" value="Version Zero"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="repo"></td><td><input type="text" value="Reposition for approval"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+        <tr><td><input type="text" value="resp"></td><td><input type="text" value="Retime / Rspeed for approval"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td></tr>
+      </tbody>
+    </table>
+    <button class="add-row-btn" onclick="addTaskRow()">+ Add task</button>
+  </div>
+</div>
+
+<!-- ── 05 HANDLES ───────────────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr" onclick="tog(this)"><h2>05 · Handles & Framecount</h2><span class="arr">▼</span></div>
+  <div class="sec-body">
+    <div class="fg g3">
+      <div class="field var">
+        <label>Standard Handles (head & tail)</label>
+        <select id="hd_std" onchange="chkOther(this)">
+          <option value="10">10 frames (standard)</option>
+          <option value="8">8 frames (e.g. Seelendorf)</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="hd_std_other" placeholder="e.g. 12 frames">
+      </div>
+      <div class="field std"><label>Lookdev / Pre-Viz Handles</label><input type="text" id="hd_ldv" value="25 frames"></div>
+      <div class="field std"><label>Slate Frame</label><input type="text" id="hd_slate" value="Frame 1000 (one frame before handles)"></div>
+      <div class="field std"><label>Handle Start Frame</label><input type="text" id="hd_start" value="1001"></div>
+      <div class="field std"><label>Final EXR Deliveries</label><input type="text" id="hd_final" value="No handles – picture lock frame range only"></div>
+      <div class="field std"><label>After Picture Lock (incoming plates)</label><input type="text" id="hd_apl" value="Handles on request only"></div>
+    </div>
+    <div class="info-box">Count Sheets are maintained in the online VFX Breakdown. They include: start & end frame, source timecode, clip name, cut range, duration, handle length, respeed / repositioning info, and all associated plates per shot.</div>
+  </div>
+</div>
+
+<!-- ── 06 FILE TRANSFER & TURNOVER ──────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr" onclick="tog(this)"><h2>06 · File Transfer & Turnover</h2><span class="arr">▼</span></div>
+  <div class="sec-body">
+    <div class="fg">
+      <div class="field var">
+        <label>Transfer Platform (DI → Vendor)</label>
+        <select id="ft_in" onchange="chkOther(this); toggleCH()">
+          <option value="FTP">FTP</option>
+          <option value="Aspera">Aspera</option>
+          <option value="Content Hub (MPS)">Content Hub (MPS)</option>
+          <option value="Moxion">Moxion</option>
+          <option value="WeTransfer">WeTransfer</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="ft_in_other" placeholder="Specify platform…">
+      </div>
+      <div class="field var">
+        <label>Transfer Platform (Vendor → DI / Editorial)</label>
+        <select id="ft_out" onchange="chkOther(this)">
+          <option value="Same as incoming">Same as incoming</option>
+          <option value="FTP">FTP</option>
+          <option value="Aspera">Aspera</option>
+          <option value="Content Hub (MPS)">Content Hub (MPS)</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="ft_out_other" placeholder="Specify platform…">
+      </div>
+      <div class="field var"><label>Server / Root Path</label><input type="text" id="ft_server" placeholder="e.g. ftp://server.studio.de/showcode/"></div>
+      <div class="field var">
+        <label>Platform with Editorial</label>
+        <select id="ft_editorial" onchange="chkOther(this)">
+          <option value="Flow Production Tracking">Flow Production Tracking</option>
+          <option value="Moxion">Moxion</option>
+          <option value="Frame.io">Frame.io</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="ft_editorial_other" placeholder="Specify…">
+      </div>
+      <div class="field var"><label>Folder Structure: Turnover (DI → VFX)</label><input type="text" id="ft_in_folder" placeholder="e.g. /to_VFX/{Vendor}/{DATE}_TO_{CODE}_{###}/"></div>
+      <div class="field var"><label>Folder Structure: Submission (VFX → DI)</label><input type="text" id="ft_out_folder" placeholder="e.g. /_from_VFX/{Vendor}/{EXR|DNxHD|h264}/"></div>
+      <div class="field var"><label>Zusätzlicher Pfad – Editorial <span class="hint">optional, falls abweichend</span></label><input type="text" id="ft_editorial_folder" placeholder="e.g. /_from_VFX/{Vendor}/DNxHD/ – nur Editorial"></div>
+      <div class="field var"><label>Zusätzlicher Pfad – DI / EXRs <span class="hint">optional, falls abweichend</span></label><input type="text" id="ft_di_folder" placeholder="e.g. /_from_VFX/{Vendor}/EXR/ – nur DI Ingest"></div>
+    </div>
+    <div id="ch-note" class="warn-box" style="display:none">⚠️ Content Hub folder structure is project-specific and must be documented separately (screenshot or description).</div>
+
+    <div class="sub-hdr">Turnover</div>
+    <div class="fg g3">
+      <div class="field var">
+        <label>Who Delivers Plates to Vendor</label>
+        <select id="ft_platesrc" onchange="chkOther(this)">
+          <option>Post Facility / DI House</option>
+          <option>WestFX directly</option>
+          <option>Content Hub</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="ft_platesrc_other" placeholder="Specify…">
+      </div>
+      <div class="field var">
+        <label>VFX Tracking / Breakdown Tool</label>
+        <select id="ft_tracking" onchange="chkOther(this)">
+          <option>Flow Production Tracking</option>
+          <option>Ninox</option>
+          <option>Google Sheets</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="ft_tracking_other" placeholder="Specify…">
+      </div>
+      <div class="field var">
+        <label>Avid Subclip Workflow</label>
+        <select id="ft_avid">
+          <option value="Yes">Yes – Avid subclip workflow is used</option>
+          <option value="No">No</option>
+        </select>
+      </div>
+      <div class="field var">
+        <label>Count Sheets Format</label>
+        <select id="ft_counts" onchange="chkOther(this)">
+          <option>Online VFX Breakdown (Flow Production Tracking)</option>
+          <option>Ninox database</option>
+          <option>Google Sheets</option>
+          <option>CSV / PDF per turnover</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="ft_counts_other" placeholder="Specify…">
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 07 VENDOR DELIVERY ───────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr" onclick="tog(this)"><h2>07 · Vendor Delivery Specs</h2><span class="arr">▼</span></div>
+  <div class="sec-body">
+
+    <div class="sub-hdr">Preview (H264 / MP4)</div>
+    <div class="fg g3">
+      <div class="field std"><label>Codec</label><input type="text" id="vd_h2_c" value="H264 or H265"></div>
+      <div class="field std"><label>Resolution</label><input type="text" id="vd_h2_r" value="UHD 3840×2160"></div>
+      <div class="field std"><label>Color Space</label><input type="text" id="vd_h2_cs" value="Rec.709 + Show LUT baked in, blanked to aspect ratio"></div>
+    </div>
+
+    <div class="sub-hdr">Editorial (DNxHD MXF)</div>
+    <div class="fg g3">
+      <div class="field var">
+        <label>DNxHD Codec</label>
+        <select id="vd_dnx" onchange="chkOther(this)">
+          <option value="DNxHD 120 (SQ) – standard">DNxHD 120 (SQ) – standard</option>
+          <option value="DNxHD 36">DNxHD 36 (e.g. Seelendorf)</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="vd_dnx_other" placeholder="Specify codec…">
+      </div>
+      <div class="field std"><label>Container</label><input type="text" id="vd_dnx_cont" value="OP-Atom MXF"></div>
+      <div class="field std"><label>Resolution</label><input type="text" id="vd_dnx_res" value="HD 1920×1080 · 25fps"></div>
+    </div>
+
+    <div class="sub-hdr">Final EXR (outgoing from Vendor)</div>
+    <div class="fg g3">
+      <div class="field var">
+        <label>EXR Delivery Timing</label>
+        <select id="vd_exr_when">
+          <option value="finals_only">Finals only – once Director Approved or Proposed as Final</option>
+          <option value="every_version">Every version – EXR with each submission</option>
+        </select>
+      </div>
+      <div class="field var">
+        <label>EXR Output Color Space</label>
+        <select id="vd_exr_cs" onchange="chkOther(this)">
+          <option>ACES AP0 Linear (standard)</option>
+          <option>ACES AP1 / ACEScg 1.2 Linear</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="vd_exr_cs_other" placeholder="Specify…">
+      </div>
+      <div class="field var"><label>EXR Output Resolution</label><input type="text" id="vd_exr_res" placeholder="e.g. Source Resolution / UHD 3840×2160 / 4096×1716"></div>
+      <div class="field var">
+        <label>Alpha / Mattes Delivery</label>
+        <select id="vd_alpha" onchange="chkOther(this)">
+          <option value="Embedded alpha in EXR (standard)">Embedded alpha channel in EXR – standard</option>
+          <option value="External PNG RGBA mattes">External PNG RGBA mattes (e.g. Helgoland)</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="vd_alpha_other" placeholder="Specify…">
+      </div>
+    </div>
+
+    <div class="sub-hdr">Review Platform</div>
+    <div class="fg">
+      <div class="field var">
+        <label>Review Platform</label>
+        <select id="rv_plat" onchange="chkOther(this)">
+          <option>Flow Production Tracking</option>
+          <option>Moxion</option>
+          <option>Frame.io</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="rv_plat_other" placeholder="Specify…">
+      </div>
+      <div class="field var"><label>Internal Review Recipients (playlist sharing)</label><input type="text" id="rv_recip" placeholder="e.g. Frank Kaminski, Christopher Lenke, Patrick Thülig"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 08 SPECIAL ───────────────────────────────────────────────────────────── -->
+<div class="section">
+  <div class="sec-hdr" onclick="tog(this)"><h2>08 · Special Notes & Studio Requirements</h2><span class="arr">▼</span></div>
+  <div class="sec-body">
+    <div class="fg">
+      <div class="field var">
+        <label>Studio Security Guidelines</label>
+        <select id="sp_sec" onchange="chkOther(this)">
+          <option value="none">None / not applicable</option>
+          <option value="Netflix Security Guidelines apply">Netflix Security Guidelines apply</option>
+          <option value="Sky Security Guidelines apply">Sky Security Guidelines apply</option>
+          <option value="Amazon Security Guidelines apply">Amazon Security Guidelines apply</option>
+          <option value="__other__">Other (specify)</option>
+        </select>
+        <input class="other-inp" id="sp_sec_other" placeholder="Specify guidelines…">
+      </div>
+      <div class="field var"><label>Minimum Resolution for VFX Work</label><input type="text" id="sp_minres" placeholder="e.g. 3840×1608 – if below, contact VFX Production"></div>
+      <div class="field var">
+        <label>Techspecs on Server / Link</label>
+        <input type="text" id="sp_server_link" placeholder="e.g. https://… or server path">
+      </div>
+      <div class="field var">
+        <label>HD Delivery Note <span class="hint">e.g. DNxHD details</span></label>
+        <input type="text" id="sp_hd" placeholder="e.g. DNxHD 120 SQ OP-Atom 1920×1080">
+      </div>
+    </div>
+    <div class="fg g1">
+      <div class="field var">
+        <label>Additional Project-Specific Notes</label>
+        <textarea id="sp_notes" rows="3" placeholder="Any further rules, deviations from standard, special requirements…"></textarea>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /form-view -->
+
+<div class="gen-bar" id="gen-bar">
+  <button class="gen-btn" onclick="generate()">▶ Full Document</button>
+  <button class="gen-btn" style="background:#1a4e8a" onclick="generate('ED')">📋 Editorial</button>
+  <button class="gen-btn" style="background:#843c0c" onclick="generate('DI')">🎞 Post House</button>
+  <button class="gen-btn" style="background:#375623" onclick="generate('VND')">🎨 Vendor</button>
+  <button class="gen-btn" style="background:#217346" onclick="saveToSheets()">☁ Save to Sheets</button>
+  <button class="gen-btn" style="background:#1a6b8a" onclick="loadFromSheets()">📂 Load from Sheets</button>
+  <button class="gen-btn sec" onclick="if(confirm('Reset all inputs?'))location.reload()">↺ Reset Form</button>
+</div>
+<div id="sheets-status" style="position:fixed;bottom:58px;left:50%;transform:translateX(-50%);padding:7px 22px;border-radius:20px;font-size:11px;font-weight:700;display:none;z-index:201;box-shadow:0 2px 8px rgba(0,0,0,.3);pointer-events:none"></div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     PREVIEW
+══════════════════════════════════════════════════════════════════════════ -->
+<div id="preview-view">
+  <div class="prev-ctrl">
+    <h2 id="prev-title">Preview – VFX Workflow Sheet</h2>
+    <button class="cbtn back" onclick="backToForm()">← Back to Form</button>
+    <button class="cbtn" style="background:#1a4e8a" onclick="generate('ED')">📋 Editorial</button>
+    <button class="cbtn" style="background:#843c0c" onclick="generate('DI')">🎞 Post House</button>
+    <button class="cbtn" style="background:#375623" onclick="generate('VND')">🎨 Vendor</button>
+    <button class="cbtn" style="background:#555" onclick="generate()">Full Doc</button>
+    <button class="cbtn" style="background:#217346" onclick="saveToSheets()">☁ Save to Sheets</button>
+    <button class="cbtn" onclick="window.print()">🖨 Print / PDF</button>
+  </div>
+  <div id="sheet"></div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════════════════════
+     JAVASCRIPT
+══════════════════════════════════════════════════════════════════════════ -->
+<script>
+// ── ACCORDION ───────────────────────────────────────────────────────────────
+function tog(hdr){
+  hdr.classList.toggle('open');
+  hdr.nextElementSibling.classList.toggle('open');
+}
+
+// ── OTHER DROPDOWN ───────────────────────────────────────────────────────────
+function chkOther(sel){
+  const oi = document.getElementById(sel.id+'_other');
+  if(oi) oi.classList.toggle('show', sel.value==='__other__');
+}
+
+// Resolve value: if 'other', use text input
+function rv(id){
+  const el=document.getElementById(id);
+  if(!el) return '';
+  if(el.tagName==='SELECT' && el.value==='__other__'){
+    const oi=document.getElementById(id+'_other');
+    return oi ? oi.value.trim()||'(specify)' : '(specify)';
+  }
+  return el.value.trim();
+}
+// Plain value
+function gv(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
+
+// ── FEATURE / SERIES TOGGLE ──────────────────────────────────────────────────
+function toggleFeature(){
+  const type=rv('proj_type');
+  const hide=type==='Feature Film'||type==='Short Film';
+  document.getElementById('series-fields').style.display=hide?'none':'block';
+}
+
+// ── SEQUENCE CODE TOGGLE ─────────────────────────────────────────────────────
+function toggleSeqCode(){
+  const yes = document.getElementById('nm_seq').value === 'Yes';
+  document.getElementById('nm_seq_code_wrap').style.display = yes ? 'block' : 'none';
+}
+
+// ── CONTENT HUB NOTE ─────────────────────────────────────────────────────────
+function toggleCH(){
+  const v=rv('ft_in');
+  document.getElementById('ch-note').style.display=v.includes('Content Hub')?'block':'none';
+}
+
+// ── VENDOR REPEATER ──────────────────────────────────────────────────────────
+let vCnt=0;
+function addVendor(){
+  vCnt++;
+  const id='v'+vCnt;
+  const d=document.createElement('div');
+  d.className='repeat-block'; d.id='vb_'+id;
+  d.innerHTML=`<button class="rm-btn" onclick="document.getElementById('vb_${id}').remove()">✕</button>
+  <div class="fg g3">
+    <div class="field var"><label>Vendor Name</label><input type="text" id="${id}_n" placeholder="e.g. Accenture Song"></div>
+    <div class="field var"><label>Code (2–6 chars)</label><input type="text" id="${id}_c" placeholder="e.g. AS" maxlength="6" oninput="this.value=this.value.toUpperCase()"></div>
+    <div class="field var"><label>Contact Name</label><input type="text" id="${id}_cn" placeholder="First Last"></div>
+    <div class="field var"><label>Email</label><input type="text" id="${id}_e" placeholder="vendor@…"></div>
+    <div class="field var"><label>Phone</label><input type="text" id="${id}_t" placeholder="+49…"></div>
+    <div class="field var"><label>Project Email Address</label><input type="text" id="${id}_pe" placeholder="e.g. showname_vendor@…"></div>
+  </div>`;
+  document.getElementById('vendors-list').appendChild(d);
+}
+
+// ── TABLE ROW HELPERS ─────────────────────────────────────────────────────────
+function removeRow(btn){ btn.closest('tr').remove(); }
+function addCamRow(){
+  const tb=document.getElementById('extra-cams');
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td><input type="text" placeholder="ID"></td><td><input type="text" placeholder="Body"></td><td><input type="text" placeholder="Native Res."></td><td><input type="text" placeholder="VFX Pull Res."></td><td><input type="text" placeholder="Color space"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td>';
+  tb.appendChild(tr);
+}
+function addIdentRow(){
+  const tb=document.getElementById('idents-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td><input type="text" placeholder="code#"></td><td><input type="text" placeholder="Description"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td>';
+  tb.appendChild(tr);
+}
+function addTaskRow(){
+  const tb=document.getElementById('tasks-body');
+  const tr=document.createElement('tr');
+  tr.innerHTML='<td><input type="text" placeholder="code"></td><td><input type="text" placeholder="Description"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td>';
+  tb.appendChild(tr);
+}
+
+// ── DATA COLLECTORS ──────────────────────────────────────────────────────────
+function getVendors(){
+  const r=[];
+  document.querySelectorAll('[id^="vb_v"]').forEach(b=>{
+    const id=b.id.replace('vb_','');
+    const n=gv(id+'_n');
+    if(n) r.push({name:n,code:gv(id+'_c'),cn:gv(id+'_cn'),email:gv(id+'_e'),tel:gv(id+'_t'),pe:gv(id+'_pe')});
+  });
+  return r;
+}
+function getTableData(tbodyId){
+  const r=[];
+  document.querySelectorAll('#'+tbodyId+' tr').forEach(tr=>{
+    const ins=tr.querySelectorAll('input');
+    if(ins[0]&&ins[0].value.trim()) r.push({a:ins[0].value.trim(),b:ins[1]?ins[1].value.trim():''});
+  });
+  return r;
+}
+function getExtraCams(){
+  const r=[];
+  document.querySelectorAll('#extra-cams tr').forEach(tr=>{
+    const ins=tr.querySelectorAll('input');
+    if(ins[0]&&ins[0].value.trim()) r.push({id:ins[0].value,body:ins[1]?.value||'',res:ins[2]?.value||'',pullRes:ins[3]?.value||'',cs:ins[4]?.value||''});
+  });
+  return r;
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function h(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fmtDate(d){
+  if(!d){ const n=new Date(); return n.getDate()+'.'+(n.getMonth()+1)+'.'+n.getFullYear(); }
+  const p=d.split('-'); return p[2]+'.'+p[1]+'.'+p[0];
+}
+function contactRow(role,name,email,tel){
+  if(!name) return '';
+  return `<tr><td class="lbl">${role}</td><td>${h(name)}</td><td>${h(email)}</td><td>${h(tel)}</td></tr>`;
+}
+function backToForm(){
+  document.getElementById('preview-view').style.display='none';
+  document.getElementById('form-view').style.display='block';
+  document.getElementById('gen-bar').style.display='flex';
+  window.scrollTo(0,0);
+}
+
+// ── MAIN GENERATOR ───────────────────────────────────────────────────────────
+function generate(aud){
+  // Collect all values
+  const code    = h(gv('proj_code').toUpperCase()||'PROJ');
+  const title   = h(gv('proj_title')||'Project Title');
+  const ptype   = h(rv('proj_type'));
+  const client  = h(gv('proj_client'));
+  const prodco  = h(gv('proj_production'));
+  const fps     = h(rv('proj_fps'));
+  const season  = h(gv('proj_season'));
+  const epFmt   = rv('proj_ep_format');
+  const epFmtH  = h(epFmt);
+  const docVer  = h(gv('doc_ver')||'v01');
+  const docDate = fmtDate(gv('doc_date'));
+  const docAuth = h(gv('doc_author'));
+
+  const isFeature = ptype==='Feature Film'||ptype==='Short Film';
+
+  const cCoN=gv('c_co_n'),cCoE=gv('c_co_e'),cCoT=gv('c_co_t');
+  const cPrN=gv('c_pr_n'),cPrE=gv('c_pr_e'),cPrT=gv('c_pr_t');
+  const cSuN=gv('c_su_n'),cSuE=gv('c_su_e'),cSuT=gv('c_su_t');
+  const cEdN=gv('c_ed_n'),cEdE=gv('c_ed_e'),cEdT=gv('c_ed_t');
+  const cQcN=gv('c_qc_n'),cQcE=gv('c_qc_e'),cQcT=gv('c_qc_t');
+  const cDiH=gv('c_di_h'),cDiN=gv('c_di_n'),cDiC=gv('c_di_c');
+  const cPpN=gv('c_pp_n'),cPpE=gv('c_pp_e'),cPpT=gv('c_pp_t');
+  const cPsN=gv('c_ps_n'),cPsE=gv('c_ps_e'),cPsT=gv('c_ps_t');
+  const pullD=h(gv('pull_distro')), subD=h(gv('sub_distro'));
+  const vendors=getVendors();
+
+  const camId=h(gv('cam_id')),camBody=h(gv('cam_body')),camRes=h(gv('cam_res'));
+  const camPullRes=h(gv('cam_pull_res'));
+  const camCS=h(rv('cam_cs')),camLens=h(rv('cam_lens'));
+  const camDailies=h(gv('cam_dailies')),camLut=h(gv('cam_lut'));
+  const extraCams=getExtraCams();
+
+  const aspect=h(rv('fmt_aspect')),container=h(rv('fmt_container'));
+  const active=h(gv('fmt_active')),vfxRes=h(rv('fmt_vfx_res'));
+  const finalDel=h(gv('fmt_final_del')),grade=h(rv('fmt_grade'));
+
+  const colPlate=h(rv('col_plate')),colWork=h(rv('col_work'));
+  const colOut=h(rv('col_out')),colExr=h(gv('col_exr'));
+  const colPrev=h(gv('col_prev')),colBcast=h(rv('col_bcast'));
+
+  const tcFrame=h(gv('tc_framing')),tcLens=h(gv('tc_lens_grid'));
+  const tcCDL=h(gv('tc_cdl')),tcLut=h(rv('tc_lut'));
+
+  const nmVer=rv('nm_ver'),nmFrame=h(gv('nm_frame')),nmSteps=h(gv('nm_steps'));
+  const nmSeq=gv('nm_seq')==='Yes';
+  const nmSeqCode=h((gv('nm_seq_code')||'SEQ').toUpperCase());
+  const idents=getTableData('idents-body');
+  const tasks=getTableData('tasks-body');
+
+  const hdStd=rv('hd_std'),hdLdv=h(gv('hd_ldv'));
+  const hdSlate=h(gv('hd_slate')),hdStart=h(gv('hd_start'));
+  const hdFinal=h(gv('hd_final')),hdApl=h(gv('hd_apl'));
+  const hdFrames=hdStd==='__other__'?'?':hdStd;
+  const ffoa=1001+(parseInt(hdFrames)||10);
+
+  const ftIn=h(rv('ft_in')),ftOut=h(rv('ft_out'));
+  const ftServer=h(gv('ft_server')),ftEditorial=h(rv('ft_editorial'));
+  const ftInF=h(gv('ft_in_folder')),ftOutF=h(gv('ft_out_folder'));
+  const ftEditorialF=h(gv('ft_editorial_folder')),ftDiF=h(gv('ft_di_folder'));
+  const ftPlateSrc=h(rv('ft_platesrc')),ftTracking=h(rv('ft_tracking'));
+  const ftAvid=gv('ft_avid'),ftCounts=h(rv('ft_counts'));
+
+  const vdH2C=h(gv('vd_h2_c')),vdH2R=h(gv('vd_h2_r')),vdH2CS=h(gv('vd_h2_cs'));
+  const vdDnx=h(rv('vd_dnx')),vdDnxCont=h(gv('vd_dnx_cont')),vdDnxRes=h(gv('vd_dnx_res'));
+  const vdExrCS=h(rv('vd_exr_cs')),vdExrRes=h(gv('vd_exr_res'));
+  const vdExrWhen=gv('vd_exr_when')||'finals_only';
+  const vdAlpha=h(rv('vd_alpha'));
+  const rvPlat=h(rv('rv_plat')),rvRecip=h(gv('rv_recip'));
+
+  const spSec=rv('sp_sec'),spMinRes=h(gv('sp_minres'));
+  const spLink=h(gv('sp_server_link')),spHD=h(gv('sp_hd'));
+  const spNotes=h(gv('sp_notes'));
+
+  // Build naming example
+  const epPart = isFeature ? '' :
+    (epFmt==='E###'?'<span class="pill p-ep">E101</span><span class="p-sep">_</span>':
+     epFmt==='S##E##'?'<span class="pill p-ep">S02E01</span><span class="p-sep">_</span>':
+     epFmt==='###'?'<span class="pill p-ep">201</span><span class="p-sep">_</span>':
+     `<span class="pill p-ep">${h(epFmt)}</span><span class="p-sep">_</span>`);
+
+  const vpill=nmVer.startsWith('v####')?'<span class="pill p-ver">v0001</span>':'<span class="pill p-ver">v001</span>';
+  const vex  =nmVer.startsWith('v####')?'v0001':'v001';
+  const epEx = isFeature?'':(epFmt==='E###'?'E101_':epFmt==='S##E##'?'S02E01_':epFmt==='###'?'201_':`${h(epFmt)}_`);
+
+  const seqPart = nmSeq ? `<span class="pill p-scene" style="background:#e0f2f1;color:#004d40">${nmSeqCode}</span><span class="p-sep">_</span>` : '';
+  const seqEx   = nmSeq ? nmSeqCode+'_' : '';
+  const namingViz=`<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">010</span><span class="p-sep">_</span><span class="pill p-ident">mp1</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-frame">1001</span><span class="p-sep">.</span><span class="pill p-ext">exr</span>`;
+  const namingExTxt=`${code}_${epEx}${seqEx}001_010_mp1_${vex}.1001.exr`;
+  const markerNamingViz=`<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">010</span>`;
+  const markerNamingExTxt=`${code}_${epEx}${seqEx}001_010`;
+  const versionViz=`<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">010</span><span class="p-sep">_</span><span class="pill p-ident">comp</span><span class="p-sep">_</span><span class="pill p-vend">AS</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-ext">mov</span>`;
+
+  const identRows=idents.map(i=>`<tr><td class="lbl mono">${h(i.a)}</td><td>${h(i.b)}</td></tr>`).join('');
+  const taskRows=tasks.map(t=>`<tr><td class="lbl mono">${h(t.a)}</td><td>${h(t.b)}</td></tr>`).join('');
+  const extraCamRows=extraCams.map(c=>`<tr><td class="lbl">${h(c.id)}</td><td>${h(c.body)}</td><td>${h(c.res)||'–'}</td><td>${h(c.pullRes)||'–'}</td><td>${h(c.cs)||'same as primary'}</td></tr>`).join('');
+  // Audience helper
+  const showFor=audiences=>!aud||audiences.includes(aud);
+  const audLabel=!aud?'':aud==='ED'?' · EDITORIAL VERSION':aud==='DI'?' · POST FACILITY VERSION':' · VENDOR VERSION';
+  const audBadges=!aud
+    ?`<span class="badge b-ed">EDITORIAL</span><span class="badge b-vnd">VFX VENDORS</span><span class="badge b-di">POST FACILITY / DI</span>`
+    :aud==='ED'?`<span class="badge b-ed">EDITORIAL</span>`
+    :aud==='DI'?`<span class="badge b-di">POST FACILITY / DI</span>`
+    :`<span class="badge b-vnd">VFX VENDORS</span>`;
+
+  const secLabel=spSec!=='none'?spSec:'';
+
+  // ── BUILD HTML ────────────────────────────────────────────────────────────
+  const out=`
+<div class="cv">
+  <div class="cv-title">${title}${audLabel}</div>
+  <div class="cv-sub">VFX Workflow Best Practice &amp; Technical Specifications</div>
+  <div class="cv-meta">
+    ${ptype}${client?' · '+client:''}${prodco?' · '+prodco:''}${season?' · '+season:''}<br>
+    Show Code: <strong>${code}</strong> · ${fps} · ${docVer} · ${docDate}${docAuth?' · '+docAuth:''}
+    ${spLink?'<br>Techspecs: <a href="'+spLink+'" target="_blank">'+spLink+'</a>':''}
+  </div>
+  <div class="cv-badges">${audBadges}</div>
+</div>
+
+<!-- 00 HOW TO USE -->
+<div class="sh1">00 · How to Use This Document</div>
+<p class="sh-p">This document is addressed to three audiences. Each section is labelled to indicate who needs to act on it.</p>
+<table class="aud-table">
+  <thead>
+    <tr>
+      <th class="ah-ed">EDITORIAL <span class="badge b-ed" style="margin-left:4px">ED</span></th>
+      <th class="ah-vnd">VFX VENDORS <span class="badge b-vnd" style="margin-left:4px">VND</span></th>
+      <th class="ah-di">POST FACILITY / DI <span class="badge b-di" style="margin-left:4px">DI</span></th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><span class="check">✔</span> VFX Spotting &amp; Shot naming<br><span class="check">✔</span> Turnover preparation (EDL/AAF)<br><span class="check">✔</span> Edit reference exports<br><span class="check">✔</span> VFX cut-in (DNxHD)</td>
+      <td><span class="check">✔</span> Naming convention &amp; plate specs<br><span class="check">✔</span> EXR / Preview / DNxHD delivery<br><span class="check">✔</span> Slate &amp; burn-in requirements<br><span class="check">✔</span> ${rvPlat} workflow &amp; versioning</td>
+      <td><span class="check">✔</span> Plate pull from OCF<br><span class="check">✔</span> LUT &amp; CDL delivery<br><span class="check">✔</span> Upload to ${ftIn}<br><span class="check">✔</span> Final EXR ingest &amp; conform</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- 01 CONTACTS -->
+<div class="sh1">01 · Contacts <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
+<table class="sht">
+  <thead><tr><th>Role</th><th>Name</th><th>Email</th><th>Phone</th></tr></thead>
+  <tbody>
+    ${contactRow('VFX Coordinator',cCoN,cCoE,cCoT)}
+    ${contactRow('VFX Producer',cPrN,cPrE,cPrT)}
+    ${cSuN?contactRow('VFX Supervisor',cSuN,cSuE,cSuT):''}
+    ${cEdN?contactRow('VFX Editor',cEdN,cEdE,cEdT):''}
+    ${contactRow('VFX QC',cQcN,cQcE,cQcT)}
+    ${cDiH?`<tr><td class="lbl">Post Facility / DI</td><td colspan="3">${h(cDiH)}</td></tr>`:''}
+    ${cDiN?contactRow('DI Engineer',cDiN,cDiC,''):''}
+    ${cPpN?contactRow('Post Producer',cPpN,cPpE,cPpT):''}
+    ${cPsN?contactRow('Post Supervisor',cPsN,cPsE,cPsT):''}
+    ${vendors.map(v=>`<tr><td class="lbl">VFX Vendor – ${h(v.name)} (${h(v.code)})</td><td>${h(v.cn)}</td><td>${h(v.email||v.pe)}</td><td>${h(v.tel)}</td></tr>`).join('')}
+  </tbody>
+</table>
+${pullD?`<div class="sh2">PULL Distro List</div><p class="sh-p">${pullD}</p>`:''}
+${subD?`<div class="sh2">SUBMISSION Distro List</div><p class="sh-p">${subD}</p>`:''}
+
+<!-- 02 TECH SPECS -->
+${showFor(['VND','DI'])?`
+<div class="sh1">02 · Technical Specifications <span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
+
+<div class="sh2">Camera & Acquisition</div>
+<table class="sht">
+  <tbody>
+    <tr><td class="lbl" style="width:38%">Primary Camera</td><td>${camId?camId+' – ':''}${camBody||'–'}</td></tr>
+    <tr><td class="lbl">Native Capture Resolution</td><td>${camRes||'–'}${camPullRes?' &nbsp;|&nbsp; VFX Pull: <strong>'+camPullRes+'</strong>':''}</td></tr>
+    <tr><td class="lbl">Lens Type</td><td>${camLens}</td></tr>
+    <tr><td class="lbl">Recording Color Space</td><td>${camCS}</td></tr>
+    <tr><td class="lbl">Preview / Dailies Color Space</td><td>${camDailies}</td></tr>
+    <tr><td class="lbl">Base Framerate</td><td>${fps}</td></tr>
+    <tr><td class="lbl">Presentation Aspect Ratio</td><td>${aspect}</td></tr>
+    <tr><td class="lbl">Delivery Container</td><td>${container}</td></tr>
+    ${active?`<tr><td class="lbl">Active Picture Area</td><td>${active}</td></tr>`:''}
+    ${finalDel?`<tr><td class="lbl">Final Show Delivery Resolution</td><td>${finalDel}</td></tr>`:''}
+    <tr><td class="lbl">Primary Grade</td><td>${grade}</td></tr>
+  </tbody>
+</table>
+
+${extraCams.length>0?`
+<div class="sh2">Additional Cameras</div>
+<table class="sht">
+  <thead><tr><th>Camera ID</th><th>Body</th><th>Native Res.</th><th>VFX Pull Res.</th><th>Color Space / Gamma</th></tr></thead>
+  <tbody>${extraCamRows}</tbody>
+</table>`:''}
+
+<div class="sh2">Show LUT / CDL</div>
+<p class="sh-p">${camLut||'LUTs are provided by the DI lab as .cube files and must be applied on the original camera recording color space ('+camCS+'). Minimum LUT data points: 33×33×33. If LUTs do not deliver the expected result, eye-matching the color to the offline editorial reference is acceptable.'}</p>
+<table class="sht" style="max-width:450px">
+  <tbody>
+    <tr><td class="lbl">Show / Seq / Shot LUTs</td><td>${tcLut}</td></tr>
+    <tr><td class="lbl">CDL Values</td><td>${tcCDL}</td></tr>
+    <tr><td class="lbl">Framing Charts received</td><td>${tcFrame}</td></tr>
+    <tr><td class="lbl">Lens Grids received</td><td>${tcLens}</td></tr>
+  </tbody>
+</table>
+
+<div class="sh2">Color Pipeline Overview</div>
+<table class="sht" style="max-width:550px">
+  <tbody>
+    <tr><td class="lbl" style="width:42%">Input Color Space (Plates from DI)</td><td>${colPlate}</td></tr>
+    <tr><td class="lbl">VFX Working Color Space</td><td>${colWork}</td></tr>
+    <tr><td class="lbl">Output / Render Color Space (to DI)</td><td>${colOut}</td></tr>
+    <tr><td class="lbl">Viewing / Preview Color Space</td><td>${colPrev}</td></tr>
+    <tr><td class="lbl">Broadcast Delivery Color Space</td><td>${colBcast}</td></tr>
+  </tbody>
+</table>
+
+<div class="sh2">EXR Specifications – Incoming vs. Outgoing</div>
+<div class="exr-grid">
+  <div class="exr-box">
+    <div class="exr-box-hdr exr-in-hdr">▼ PLATES INCOMING (DI → Vendor)</div>
+    <table><tbody>
+      <tr><td>Format</td><td>${colExr}</td></tr>
+      <tr><td>Color Space</td><td>${colPlate}</td></tr>
+      <tr><td>Resolution</td><td>${h(rv('fmt_vfx_res'))}</td></tr>
+      <tr><td>Handles</td><td>${hdFrames} frames head &amp; tail</td></tr>
+      <tr><td>Source TC</td><td>Embedded in EXR header (timecode metadata field)</td></tr>
+      <tr><td>Source Filename</td><td>Original clip name preserved in EXR metadata – do not strip</td></tr>
+      <tr><td>Camera Metadata</td><td>Must be fully preserved from original OCF (camera model, lens, ISO, etc.)</td></tr>
+      <tr><td>Pixel Aspect</td><td>Preserved – do not desqueeze${camLens.includes('Anamorphic')?` (${camLens})`:''}  </td></tr>
+    </tbody></table>
+  </div>
+  <div class="exr-box">
+    <div class="exr-box-hdr exr-out-hdr">▲ FINAL EXRs OUTGOING (Vendor → DI)</div>
+    <table><tbody>
+      <tr><td>Format</td><td>${colExr}</td></tr>
+      <tr><td>Color Space</td><td>${vdExrCS}</td></tr>
+      <tr><td>Resolution</td><td>${vdExrRes||'Same as source'}</td></tr>
+      <tr><td>Handles</td><td>No handles – picture lock frame range</td></tr>
+      <tr><td>Source TC</td><td>Original source TC preserved – do not modify or strip</td></tr>
+      <tr><td>Source Filename</td><td>Original clip/plate name preserved in EXR metadata</td></tr>
+      <tr><td>Retimes</td><td>Applied and baked in</td></tr>
+      <tr><td>CDL / LUT</td><td>Do NOT bake into EXR</td></tr>
+      <tr><td>Alpha / Mattes</td><td>${vdAlpha}</td></tr>
+    </tbody></table>
+  </div>
+</div>
+<p class="note">⚠ Incoming and outgoing EXR specs may intentionally differ (e.g. color space, resolution, handles). Both are correct for their respective stage.</p>
+
+<div class="sh2">Handles & Framecount</div>
+<table class="sht" style="max-width:500px">
+  <tbody>
+    <tr><td class="lbl" style="width:42%">Standard Handles (head &amp; tail)</td><td>${hdFrames} frames</td></tr>
+    <tr><td class="lbl">Lookdev / Pre-Viz Handles</td><td>${hdLdv}</td></tr>
+    <tr><td class="lbl">Slate Frame</td><td>${hdSlate}</td></tr>
+    <tr><td class="lbl">Handle Start Frame</td><td>${hdStart}</td></tr>
+    <tr><td class="lbl">First Frame of Action (FFOA)</td><td>Frame ${ffoa} (= 1001 + ${hdFrames} handles)</td></tr>
+    <tr><td class="lbl">Final Deliveries</td><td>${hdFinal}</td></tr>
+    <tr><td class="lbl">After Picture Lock (incoming)</td><td>${hdApl}</td></tr>
+  </tbody>
+</table>
+
+`:''}
+
+<!-- 03 NAMING -->
+${showFor(['ED','VND','DI'])?`
+<div class="sh1">03 · Naming Convention <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
+
+<div class="sh2">Marker Naming <span class="aud-badge b-ed">ED</span></div>
+<p class="sh-p">VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert:</p>
+<p class="sh-p" style="margin-bottom:6px">${markerNamingViz}</p>
+<p class="sh-p note">Example: <span class="mono">${markerNamingExTxt}</span></p>
+
+<div class="sh2">Plate Name Structure</div>
+<p class="sh-p" style="margin-bottom:6px">${namingViz}</p>
+<p class="sh-p note">Example: <span class="mono">${namingExTxt}</span></p>
+
+<div class="sh2">Shot Version Name Structure (Vendor Deliveries)</div>
+<p class="sh-p" style="margin-bottom:6px">${versionViz}</p>
+
+<div class="sh2">Name Component Definitions</div>
+<table class="sht" style="max-width:620px">
+  <thead><tr><th>Component</th><th>Description</th><th>Format</th></tr></thead>
+  <tbody>
+    <tr><td class="lbl p-code" style="background:#dce9f8">Show Code</td><td>Unique project identifier</td><td class="mono">${code}</td></tr>
+    ${!isFeature?`<tr><td class="lbl" style="background:#e8f5e9">Episode</td><td>Episode number in agreed format</td><td class="mono">${epFmtH}</td></tr>`:''}
+    ${nmSeq?`<tr><td class="lbl" style="background:#e0f2f1;color:#004d40">Sequence</td><td>Sequence group identifier</td><td class="mono">SEQ</td></tr>`:''}
+    <tr><td class="lbl" style="background:#fff3e0">Scene</td><td><strong>Scene number from the screenplay / script</strong> (3 digits)</td><td class="mono">001–999</td></tr>
+    <tr><td class="lbl" style="background:#fce4d6">Shot</td><td>Shot number within scene</td><td class="mono">010, 020… (steps of 10)</td></tr>
+    <tr><td class="lbl" style="background:#f3e5f5">Plate Ident</td><td>Plate type identifier (see table below)</td><td class="mono">mp1, bg2, el1…</td></tr>
+    <tr><td class="lbl" style="background:#e0f2f1">Vendor Code</td><td>Abbreviated vendor identifier</td><td class="mono">AS, UPP, RUR…</td></tr>
+    <tr><td class="lbl" style="background:#e8eaf6">Version</td><td>Sequential version – never reuse a number</td><td class="mono">${nmVer}</td></tr>
+    <tr><td class="lbl" style="background:#f5f5f5">Frame</td><td>4-digit zero-padded frame number</td><td class="mono">1001, 1002…</td></tr>
+  </tbody>
+</table>
+<p class="note">⚠ No special characters allowed anywhere: / | ( ) # § $ &amp; @ % * { } etc. Shot names must remain unique across the entire project – even if a shot moves episodes.</p>
+
+<div class="sh2">Plate Idents</div>
+<table class="sht" style="max-width:420px">
+  <thead><tr><th>Code</th><th>Description</th></tr></thead>
+  <tbody>${identRows}</tbody>
+</table>
+
+<div class="sh2">Shot Version Task Types</div>
+<table class="sht" style="max-width:420px">
+  <thead><tr><th>Code</th><th>Description</th></tr></thead>
+  <tbody>${taskRows}</tbody>
+</table>
+<p class="note">QT and EXR must always share the same version number. Version numbers must be unique and incremental – never reuse a version number regardless of change size.</p>
+`:''}
+
+<!-- 04 TURNOVER -->
+${showFor(['ED','DI'])?`
+<div class="sh1">04 · Turnover Process <span class="aud-badge b-ed">ED</span><span class="aud-badge b-di">DI</span></div>
+
+<p class="sh-p">Plates are provided by <strong>${ftPlateSrc}</strong> via <strong>${ftIn}</strong>${ftServer?' ('+ftServer+')':''}. VFX Breakdown is maintained in <strong>${ftTracking}</strong>.</p>
+
+<div class="sh2">Turnover Package Contents</div>
+<div class="steps">
+  <div class="step"><div class="step-num">1</div><div class="step-txt"><strong>Pull EDL &amp; AAF</strong> – FILE32 EDL including CDL values, plus AAF per vendor</div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Edit References</strong> – with burn-ins (for VFX review) AND clean online refs (for conform) · ${vdH2C} · ${container} · ${fps}</div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-txt"><strong>EXR Plates</strong> – ${colExr} · ${colPlate} · ${hdFrames}fr handles · source TC embedded · camera metadata preserved</div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-txt"><strong>LUT Files</strong> – .cube format · min. 33×33×33 data points · must be applied on original camera recording color space</div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-txt"><strong>Count Sheets</strong> (via ${ftCounts}) – start/end frame, source TC, clip name, cut range, duration, handles, respeed/reframe notes, all plates per shot</div></div>
+</div>
+
+${ftInF?`<div class="sh2">Folder Structure (Incoming DI → VFX)</div><p class="sh-p mono" style="background:#f5f5f5;padding:8px 12px;border-radius:4px">${ftInF}</p>`:''}
+
+<div class="sh2">Turnover Deadlines</div>
+<table class="sht" style="max-width:480px">
+  <tbody>
+    <tr><td class="lbl">Up to 10 shots</td><td>Upload within 48h of Editorial Turnover notification</td></tr>
+    <tr><td class="lbl">Up to 300 shots</td><td>Upload within 72h of Editorial Turnover notification</td></tr>
+    <tr><td class="lbl">Delays</td><td>Flag immediately to VFX Production</td></tr>
+    <tr><td class="lbl">Pre-picture lock pulls</td><td>Allowed for specific shots / sequences after greenlight (fixed framing)</td></tr>
+  </tbody>
+</table>
+
+${ftAvid==='Yes'?`
+<div class="sh2">Avid Subclip Workflow <span class="aud-badge b-ed">ED</span></div>
+<div class="steps">
+  <div class="step"><div class="step-num">1</div><div class="step-txt"><strong>Create Turnover Bin</strong> – name: <span class="mono">YYYYMMDD_${code}_vfxturnover_###</span></div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Create Subclips</strong> for all layers of each VFX shot (including handles) – name according to naming convention</div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-txt"><strong>Build Pull Sequence</strong> with all plate subclips – export FILE32 EDL – arrange clips by ascending name</div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-txt"><strong>Export Edit Refs</strong> with burn-ins: TAPE ID, Source TC, Clip Name (= plate name), Master TC, VFX Scope of Work</div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-txt">⚠ <strong>No mixdowns</strong> – preserve link to OCF / original camera metadata at all times</div></div>
+</div>`:''}
+
+`:''}
+
+<!-- 05 PLATE PACKAGE -->
+${showFor(['VND','DI'])?`
+<div class="sh1">05 · Plate Package <span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
+
+<div class="sh2">Plate EXR Specifications (incoming)</div>
+<table class="sht" style="max-width:550px">
+  <tbody>
+    <tr><td class="lbl" style="width:42%">Format</td><td>${colExr}</td></tr>
+    <tr><td class="lbl">Color Space</td><td>${colPlate}</td></tr>
+    <tr><td class="lbl">Resolution</td><td>${h(rv('fmt_vfx_res'))}</td></tr>
+    <tr><td class="lbl">Handles</td><td>${hdFrames} frames head &amp; tail</td></tr>
+    <tr><td class="lbl">Source TC</td><td>Embedded in EXR header – timecode as recorded on set</td></tr>
+    <tr><td class="lbl">Source Filename</td><td>Original clip name embedded in EXR metadata – must not be stripped or renamed internally</td></tr>
+    <tr><td class="lbl">Camera Metadata</td><td>Must be fully preserved from original OCF (camera model, lens, ISO, white balance, etc.)</td></tr>
+    <tr><td class="lbl">Pixel Aspect</td><td>Preserved as shot – do not desqueeze plates</td></tr>
+    <tr><td class="lbl">Start Frame</td><td>1001 (= first handle frame). Slate on 1000</td></tr>
+  </tbody>
+</table>
+<p class="note">⚠ Vendors: check incoming shots for correct naming and technical specs immediately upon ingest. Report discrepancies to VFX Production right away.</p>
+${spMinRes?`<p class="note">⚠ Minimum resolution for VFX work: ${spMinRes}</p>`:''}
+
+${ftInF?`<div class="sh2">Folder Structure</div><p class="sh-p mono" style="background:#f5f5f5;padding:8px 12px;border-radius:4px">${ftInF}</p>`:''}
+
+<div class="sh2">What DI Provides Before First Turnover</div>
+<table class="sht" style="max-width:480px">
+  <tbody>
+    <tr><td class="lbl">Framing Charts</td><td>${tcFrame}</td></tr>
+    <tr><td class="lbl">Lens Grids</td><td>${tcLens}</td></tr>
+    <tr><td class="lbl">CDL Values</td><td>${tcCDL}</td></tr>
+    <tr><td class="lbl">Show LUT / CDLs</td><td>${tcLut}</td></tr>
+    <tr><td class="lbl">Grain Plates</td><td>Provided upon request</td></tr>
+  </tbody>
+</table>
+
+`:''}
+
+<!-- 06 VENDOR DELIVERY -->
+${showFor(['VND'])?`
+<div class="sh1">06 · Vendor Delivery <span class="aud-badge b-vnd">VND</span></div>
+
+<div class="sh2">Version Zero (required before starting VFX work)</div>
+<p class="sh-p">Each vendor must deliver a <strong>Version Zero</strong> from the main plate only. This must be reviewed and approved by VFX Editorial / Production before actual VFX work begins.</p>
+<table class="sht" style="max-width:600px">
+  <thead><tr><th>Deliverable</th><th>Spec</th></tr></thead>
+  <tbody>
+    <tr><td class="lbl">H264 / MP4 Preview</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS}</td></tr>
+    <tr><td class="lbl">DNxHD MXF (Editorial)</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes}</td></tr>
+    <tr><td class="lbl">EXR</td><td>Main plate with retimes &amp; repos applied · no handles</td></tr>
+  </tbody>
+</table>
+
+<div class="sh2">VFX Version Deliveries</div>
+<table class="sht">
+  <thead><tr><th>Deliverable</th><th>Format</th><th>Specification</th></tr></thead>
+  <tbody>
+    <tr><td class="lbl">Preview</td><td>MP4 / MOV</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS} · blanked to ${aspect}</td></tr>
+    <tr><td class="lbl">Mini Cuts</td><td>MP4 / MOV</td><td>At least one shot before and after reviewed range – on request</td></tr>
+    <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes}</td></tr>
+    <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · no handles${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
+    <tr><td class="lbl">Alpha / Mattes</td><td colspan="2">${vdAlpha} – required for: screen inserts, sky replacements, bg inserts, set extensions, full CG</td></tr>
+    <tr><td class="lbl">Submission Sheet</td><td>.csv</td><td>Shot Name · Version Name · Scope of Work · Vendor · Submitting For · Notes</td></tr>
+  </tbody>
+</table>
+
+${ftOutF?`<div class="sh2">Upload Folder Structure</div><p class="sh-p mono" style="background:#f5f5f5;padding:8px 12px;border-radius:4px">${ftOutF}</p><p class="sh-p note">Always create subfolders: EXR / DNxHD / H264</p>`:''}
+${ftEditorialF?`<div class="sh2">Editorial Upload Path <span class="aud-badge b-ed">ED</span></div><p class="sh-p mono" style="background:#f0f7ff;padding:8px 12px;border-radius:4px">${ftEditorialF}</p>`:''}
+${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</span></div><p class="sh-p mono" style="background:#fff5f0;padding:8px 12px;border-radius:4px">${ftDiF}</p>`:''}
+
+<div class="sh2">General Vendor Rules</div>
+<div class="steps">
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Blanking to <strong>${aspect}</strong> in previews and DNxHD. <strong>Never</strong> blanked in EXRs</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">No VFX work in overscan areas unless explicitly requested by VFX Production</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Never bake CDL or LUT values into Final EXRs</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Provide ETAs per shot within first week after delivery</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version – must match the upload folder name exactly (e.g. <span class="mono">${code}_${epEx}${seqEx}001_010_comp_AS_${vex}</span>)</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Only the last approved version needs to be rendered as EXR and submitted to DI</div></div>
+  ${secLabel?`<div class="step"><div class="step-num">⚠</div><div class="step-txt"><strong>${secLabel}</strong></div></div>`:''}
+  ${spMinRes?`<div class="step"><div class="step-num">⚠</div><div class="step-txt">Minimum resolution for VFX work: ${spMinRes} – contact VFX Production if below</div></div>`:''}
+</div>
+
+<div class="sh2">Slate Requirements</div>
+<table class="sht" style="max-width:560px">
+  <tbody>
+    <tr><td class="lbl" style="width:38%">Slate Frame</td><td>Frame 1000 · 1 frame before handles · same resolution as subsequent frames</td></tr>
+    <tr><td class="lbl">Required Slate Fields</td><td>Vendor · Show Name · VFX Scope of Work · Shot &amp; Version · Delivery Date · Submission Notes · Submitted For · Thumbnail (mid-frame with CDL/LUT applied)</td></tr>
+    <tr><td class="lbl">Burn-in Style (finals)</td><td>White · 50% opacity · placed in overscan / blanking area outside active picture</td></tr>
+    <tr><td class="lbl">Burn-in Fields</td><td>TAPE ID · Source TC · Clip Name (= plate name) · Master TC · VFX Scope of Work</td></tr>
+  </tbody>
+</table>
+
+`:''}
+
+<!-- 07 REVIEW -->
+${showFor(['VND','DI'])?`
+<div class="sh1">07 · Review Process <span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
+
+<div class="sh2">Platform: ${rvPlat}</div>
+<div class="steps">
+  <div class="step"><div class="step-num">1</div><div class="step-txt">Vendor uploads H264/MP4 preview to <strong>${rvPlat}</strong> and creates a new playlist named after the submission</div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-txt">Share playlist with: ${rvRecip||cCoN+', '+cPrN} – set shot status to <strong>Pending Review</strong> (only status set by vendor)</div></div>
+  <div class="step"><div class="step-num">3</div><div class="step-txt">WestFX collects versions, filters feedback, prepares approval playlists for directors and production</div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-txt">VFX Editorial cuts in DNxHD and checks frame range, retimes, repos, and scope match against editorial reference</div></div>
+  <div class="step"><div class="step-num">5</div><div class="step-txt">${vdExrWhen==='every_version'
+    ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version.`
+    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version.`
+  }</div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-txt">VFX Production signs off when a positive QC pass has been confirmed by Post Supervisor and all studio deliverables are complete</div></div>
+</div>
+
+<div class="sh2">Status Overview</div>
+<table class="sht" style="max-width:620px">
+  <thead><tr><th>Status</th><th>Meaning</th></tr></thead>
+  <tbody>
+    <tr><td class="lbl">Waiting to Start</td><td>Pending turnover or awaiting greenlight</td></tr>
+    <tr><td class="lbl">In Progress</td><td>Greenlit – plate turned over, work is running</td></tr>
+    <tr><td class="lbl">On Hold</td><td>Paused – may be required later</td></tr>
+    <tr><td class="lbl">Omit</td><td>Shot has been dropped</td></tr>
+    <tr><td class="lbl">Pending Revision</td><td>Vendor waiting for feedback</td></tr>
+    <tr><td class="lbl">Proposed as Final</td><td>WestFX proposes shot as creative final – minor tech fixes outstanding</td></tr>
+    <tr><td class="lbl">Director Approved</td><td>Creative approval granted → Final EXR delivery can proceed</td></tr>
+    <tr><td class="lbl">Final Approved</td><td>QC, DI and grading passed – shot complete</td></tr>
+  </tbody>
+</table>
+<p class="note">Only vendors set "Pending Review". All other statuses are managed by WestFX Production.</p>
+`:''}
+
+${spNotes?`
+<div class="sh1">08 · Project-Specific Notes</div>
+<p class="sh-p">${spNotes}</p>`:''}
+
+<div style="margin-top:40px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#aaa;text-align:center">
+  ${title} · ${code} · ${docVer} · ${docDate} · WestFX · internal document
+</div>`;
+
+  document.getElementById('sheet').innerHTML=out;
+  document.getElementById('form-view').style.display='none';
+  document.getElementById('gen-bar').style.display='none';
+  document.getElementById('preview-view').style.display='block';
+  const pt=document.getElementById('prev-title');
+  if(pt) pt.textContent='Preview – VFX Workflow Sheet'+(audLabel?audLabel:'');
+  window.scrollTo(0,0);
+}
+
+// ── GOOGLE SHEETS CONFIG ──────────────────────────────────────────────────────
+// Paste your deployed Google Apps Script Web App URL here (without the token):
+const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynOoRj4_y7peFSJqlKBbijpakC-URRSSFKqvS7MLcfRAjwcATkJ55ZwGR4hZy8nUQ_aQ/exec';
+const APPS_SCRIPT_TOKEN = 'jP2ZiHta@6ax';
+
+// ── COLLECT SHEET DATA ────────────────────────────────────────────────────────
+// Maps EVERY form field to a dedicated Google Sheet column – full round-trip.
+function collectSheetData(){
+  const extraCams = getExtraCams();
+  const vendors   = getVendors();
+  const idents    = getTableData('idents-body');
+  const tasks     = getTableData('tasks-body');
+
+  // Anamorphic pixel aspect (derived display value)
+  const lens = rv('cam_lens');
+  let anamorphic = 'Spherical (1.0×)';
+  if(lens.includes('1.3'))                            anamorphic = '1.3× squeeze';
+  else if(lens.includes('2×')||lens.includes('2:1')) anamorphic = '2.0× squeeze';
+  else if(!lens.toLowerCase().includes('spherical')) anamorphic = lens;
+
+  // First Frame in Cut (FFOA) – derived/display only, not restored on load
+  const startF  = parseInt(gv('hd_start')||'1001');
+  const handles = parseInt(rv('hd_std')||'10');
+  const ffoa    = (!isNaN(startF)&&!isNaN(handles)) ? String(startF+handles) : '';
+
+  return {
+    // ── PROJECT INFO ─────────────────────────────────────────────────────────
+    'Projektname'                              : rv('proj_title'),
+    'Show Code'                                : gv('proj_code'),
+    'Project Type'                             : rv('proj_type'),
+    'Client / Broadcaster'                     : gv('proj_client'),
+    'Production Company'                       : gv('proj_production'),
+    'Framerate'                                : rv('proj_fps'),
+    'Season / Episode Info'                    : gv('proj_season'),
+    'Episode Number Format'                    : rv('proj_ep_format'),
+    'Document Version'                         : gv('doc_ver'),
+    'Document Date'                            : gv('doc_date'),
+    'Document Author'                          : gv('doc_author'),
+    // ── CONTACTS – WestFX ────────────────────────────────────────────────────
+    'VFX Coordinator'                          : gv('c_co_n'),
+    'VFX Coordinator Email'                    : gv('c_co_e'),
+    'VFX Coordinator Phone'                    : gv('c_co_t'),
+    'VFX Producer'                             : gv('c_pr_n'),
+    'VFX Producer Email'                       : gv('c_pr_e'),
+    'VFX Producer Phone'                       : gv('c_pr_t'),
+    'VFX Supervisor'                           : gv('c_su_n'),
+    'VFX Supervisor Email'                     : gv('c_su_e'),
+    'VFX Supervisor Phone'                     : gv('c_su_t'),
+    'VFX Editor'                               : gv('c_ed_n'),
+    'VFX Editor Email'                         : gv('c_ed_e'),
+    'VFX Editor Phone'                         : gv('c_ed_t'),
+    'VFX QC'                                   : gv('c_qc_n'),
+    'VFX QC Email'                             : gv('c_qc_e'),
+    'VFX QC Phone'                             : gv('c_qc_t'),
+    // ── CONTACTS – Post Facility ─────────────────────────────────────────────
+    'Post Facility / DI House'                 : gv('c_di_h'),
+    'DI Engineer'                              : gv('c_di_n'),
+    'DI Engineer Contact'                      : gv('c_di_c'),
+    'Post Producer'                            : gv('c_pp_n'),
+    'Post Producer Email'                      : gv('c_pp_e'),
+    'Post Producer Phone'                      : gv('c_pp_t'),
+    'Post Supervisor'                          : gv('c_ps_n'),
+    'Post Supervisor Email'                    : gv('c_ps_e'),
+    'Post Supervisor Phone'                    : gv('c_ps_t'),
+    // ── VENDORS & DISTRO ─────────────────────────────────────────────────────
+    'Vendors JSON'                             : JSON.stringify(vendors),
+    'PULL Distro'                              : gv('pull_distro'),
+    'SUBMISSION Distro'                        : gv('sub_distro'),
+    // ── CAMERA ───────────────────────────────────────────────────────────────
+    'Primary Camera ID'                        : gv('cam_id'),
+    'Primary Camera Body'                      : gv('cam_body'),
+    'Native Capture Resolution'                : gv('cam_res'),
+    'VFX Pull Resolution'                      : gv('cam_pull_res'),
+    'Recording Color Space'                    : rv('cam_cs'),
+    'Lens Type'                                : rv('cam_lens'),
+    'Anamorphic Pixel Aspect'                  : anamorphic,
+    'Preview / Dailies Color Space'            : gv('cam_dailies'),
+    'Show LUT / CDL'                           : gv('cam_lut'),
+    'Additional Cameras JSON'                  : JSON.stringify(extraCams),
+    // ── FORMAT ───────────────────────────────────────────────────────────────
+    'Presentation Aspect Ratio'                : rv('fmt_aspect'),
+    'Delivery Container Format'                : rv('fmt_container'),
+    'Active Picture Area'                      : gv('fmt_active'),
+    'Plate Resolution'                         : rv('fmt_vfx_res'),
+    'Final Show Delivery Resolution'           : gv('fmt_final_del'),
+    'Primary Grade'                            : rv('fmt_grade'),
+    // ── COLOR PIPELINE ───────────────────────────────────────────────────────
+    'Plate Color Space (EXR incoming)'         : rv('col_plate'),
+    'VFX Working Color Space'                  : rv('col_work'),
+    'Output Color Space (EXR outgoing)'        : rv('col_out'),
+    'EXR Format'                               : gv('col_exr'),
+    'Preview Color Space (H264)'               : gv('col_prev'),
+    'Broadcast Delivery Color Space'           : rv('col_bcast'),
+    // ── TECHNICAL CHECKLIST ──────────────────────────────────────────────────
+    'Framing Charts received'                  : gv('tc_framing'),
+    'Lens Grid received'                       : gv('tc_lens_grid'),
+    'CDL values available'                     : gv('tc_cdl'),
+    'Show / Seq / Shot LUT'                    : rv('tc_lut'),
+    // ── NAMING CONVENTION ────────────────────────────────────────────────────
+    'Version Number Padding'                   : rv('nm_ver'),
+    'Frame Number Padding'                     : gv('nm_frame'),
+    'Shot Number Increments'                   : gv('nm_steps'),
+    'Sequence Level in Shot Name'              : gv('nm_seq'),
+    'Sequence Code Example'                    : gv('nm_seq_code'),
+    'Plate Idents JSON'                        : JSON.stringify(idents),
+    'Task Types JSON'                          : JSON.stringify(tasks),
+    // ── HANDLES ──────────────────────────────────────────────────────────────
+    'Standard Handles'                         : rv('hd_std'),
+    'Lookdev / Pre-Viz Handles'                : gv('hd_ldv'),
+    'Slate Frame'                              : gv('hd_slate'),
+    'Start Frame'                              : gv('hd_start'),
+    'First Frame in Cut (FFOA)'                : ffoa,
+    'Final EXR Deliveries'                     : gv('hd_final'),
+    'After Picture Lock'                       : gv('hd_apl'),
+    // ── FILE TRANSFER ────────────────────────────────────────────────────────
+    'Transfer Platform (DI → Vendor)'          : rv('ft_in'),
+    'Transfer Platform (Vendor → DI)'          : rv('ft_out'),
+    'Server / Root Path'                       : gv('ft_server'),
+    'Platform with Editorial'                  : rv('ft_editorial'),
+    'Folder Structure: Turnover (incoming)'    : gv('ft_in_folder'),
+    'Folder Structure: Submission (outgoing)'  : gv('ft_out_folder'),
+    'Folder Path – Editorial'                  : gv('ft_editorial_folder'),
+    'Folder Path – DI / EXRs'                  : gv('ft_di_folder'),
+    'Who Delivers Plates'                      : rv('ft_platesrc'),
+    'VFX Tracking Tool'                        : rv('ft_tracking'),
+    'Avid Subclip Workflow'                    : gv('ft_avid'),
+    'Count Sheets Format'                      : rv('ft_counts'),
+    // ── VENDOR DELIVERY ──────────────────────────────────────────────────────
+    'Preview Codec'                            : gv('vd_h2_c'),
+    'Preview Resolution'                       : gv('vd_h2_r'),
+    'Preview Color Space (H264 out)'           : gv('vd_h2_cs'),
+    'DNxHD Codec'                              : rv('vd_dnx'),
+    'DNxHD Container'                          : gv('vd_dnx_cont'),
+    'DNxHD Resolution'                         : gv('vd_dnx_res'),
+    'EXR Delivery Timing'                      : gv('vd_exr_when'),
+    'EXR Output Color Space'                   : rv('vd_exr_cs'),
+    'EXR Output Resolution'                    : gv('vd_exr_res'),
+    'Alpha / Mattes Delivery'                  : rv('vd_alpha'),
+    'Review Platform'                          : rv('rv_plat'),
+    'Review Recipients'                        : gv('rv_recip'),
+    // ── SPECIAL ──────────────────────────────────────────────────────────────
+    'Studio Security Guidelines'               : rv('sp_sec'),
+    'Minimum VFX Resolution'                   : gv('sp_minres'),
+    'Techspecs on Server'                      : gv('sp_server_link'),
+    'HD Delivery Note'                         : gv('sp_hd'),
+    'Additional Notes'                         : gv('sp_notes')
+  };
+}
+
+// ── SAVE TO GOOGLE SHEETS ─────────────────────────────────────────────────────
+function showSheetStatus(msg, ok){
+  const el = document.getElementById('sheets-status');
+  el.textContent = msg;
+  el.style.background = ok ? '#217346' : '#c00';
+  el.style.color = '#fff';
+  el.style.display = 'block';
+  clearTimeout(el._t);
+  el._t = setTimeout(()=>{ el.style.display='none'; }, 4000);
+}
+
+async function saveToSheets(){
+  const data = collectSheetData();
+  if(!data['Projektname']){
+    showSheetStatus('⚠ Please enter a Project Title first.', false);
+    return;
+  }
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_SCRIPT_ID')){
+    showSheetStatus('⚠ No Apps Script URL configured – see README.', false);
+    return;
+  }
+
+  // ── CONFLICT CHECK ────────────────────────────────────────────────────────
+  // If we previously loaded this project, check whether someone else has saved
+  // in the meantime before we overwrite.
+  if(window._lastModifiedOnLoad && window._loadedProject === data['Projektname']){
+    try {
+      showSheetStatus('⏳ Checking for conflicts…', true);
+      const chkUrl = APPS_SCRIPT_URL
+        + '?token='   + encodeURIComponent(APPS_SCRIPT_TOKEN)
+        + '&action=load'
+        + '&project=' + encodeURIComponent(data['Projektname']);
+      const chkResp = await fetch(chkUrl, { method:'POST', mode:'cors' });
+      const chkJson = await chkResp.json();
+      if(chkJson.ok && chkJson.data['_last_modified'] &&
+         chkJson.data['_last_modified'] !== window._lastModifiedOnLoad){
+        const loadedAt   = new Date(window._lastModifiedOnLoad).toLocaleString();
+        const modifiedAt = new Date(chkJson.data['_last_modified']).toLocaleString();
+        const proceed = confirm(
+          '⚠ Conflict detected!\n\n' +
+          'This project was modified by someone else since you loaded it.\n\n' +
+          'You loaded at:       ' + loadedAt + '\n' +
+          'Last saved at:       ' + modifiedAt + '\n\n' +
+          'Overwrite with your version?'
+        );
+        if(!proceed){
+          showSheetStatus('✗ Save cancelled – reload the project to get the latest version.', false);
+          return;
+        }
+      }
+    } catch(e){ /* if the check fails, proceed with save */ }
+  }
+
+  // ── SAVE ──────────────────────────────────────────────────────────────────
+  const newTs = new Date().toISOString();
+  data['_last_modified'] = newTs;
+  showSheetStatus('⏳ Saving to Google Sheets…', true);
+  const url = APPS_SCRIPT_URL + '?token=' + encodeURIComponent(APPS_SCRIPT_TOKEN);
+  fetch(url, {
+    method  : 'POST',
+    mode    : 'no-cors',           // Google Apps Script requires no-cors for cross-origin POST
+    headers : { 'Content-Type': 'application/json' },
+    body    : JSON.stringify(data)
+  }).then(()=>{
+    // Update our local reference so subsequent saves use the new timestamp
+    window._lastModifiedOnLoad = newTs;
+    window._loadedProject      = data['Projektname'];
+    showSheetStatus('✓ Saved to Google Sheets!', true);
+  }).catch(()=>{
+    showSheetStatus('✗ Could not reach Google Sheets – check URL.', false);
+  });
+}
+
+// ── LOAD FROM GOOGLE SHEETS ───────────────────────────────────────────────────
+async function loadFromSheets(){
+  const projName = (document.getElementById('proj_title')?.value || '').trim();
+  if(!projName){
+    showSheetStatus('⚠ Enter a Project Title first, then click Load.', false);
+    return;
+  }
+  if(!APPS_SCRIPT_URL || APPS_SCRIPT_URL.includes('YOUR_SCRIPT_ID')){
+    showSheetStatus('⚠ No Apps Script URL configured.', false);
+    return;
+  }
+  showSheetStatus('⏳ Loading from Google Sheets…', true);
+  const url = APPS_SCRIPT_URL
+    + '?token='   + encodeURIComponent(APPS_SCRIPT_TOKEN)
+    + '&action=load'
+    + '&project=' + encodeURIComponent(projName);
+  try {
+    const resp = await fetch(url, { method:'POST', mode:'cors' });
+    const json = await resp.json();
+    if(!json.ok){
+      showSheetStatus('✗ ' + (json.error || 'Project not found in Sheet'), false);
+      return;
+    }
+    populateFromSheet(json.data);
+    showSheetStatus('✓ Project loaded! Check and complete any missing fields.', true);
+  } catch(err){
+    showSheetStatus('✗ Could not load – check connection.', false);
+  }
+}
+
+// ── SET VALUE HELPER (handles selects + "Other") ──────────────────────────────
+// Returns true if the value was actually set (for counting loaded fields)
+function sv(id, val){
+  if(val === undefined || val === null || String(val) === '') return false;
+  val = String(val);
+  const el = document.getElementById(id);
+  if(!el) return false;
+  let didSet = false;
+  if(el.tagName === 'SELECT'){
+    const opt = [...el.options].find(o => o.value === val || o.text === val);
+    if(opt){
+      el.value = opt.value;
+      didSet = true;
+    } else {
+      const other = [...el.options].find(o => o.value === '__other__');
+      if(other){
+        el.value = '__other__';
+        const oi = document.getElementById(id + '_other');
+        if(oi){ oi.value = val; oi.classList.add('show'); markLoaded(oi); }
+        didSet = true;
+      }
+    }
+  } else {
+    el.value = val;
+    didSet = true;
+  }
+  if(didSet) markLoaded(el);
+  return didSet;
+}
+
+// Highlight a field as "loaded from Sheet"; clears when user edits it
+function markLoaded(el){
+  el.classList.add('sheet-loaded');
+  const clear = () => {
+    el.classList.remove('sheet-loaded');
+    el.removeEventListener('input',  clear);
+    el.removeEventListener('change', clear);
+  };
+  el.addEventListener('input',  clear);
+  el.addEventListener('change', clear);
+}
+
+// ── POPULATE FORM FROM SHEET DATA ─────────────────────────────────────────────
+function populateFromSheet(d){
+  let loaded = 0;
+  const s = (id, val) => { if(sv(id, val)) loaded++; };
+
+  // ── Project Info ────────────────────────────────────────────────────────────
+  s('proj_title',     d['Projektname']);
+  s('proj_code',      d['Show Code']);
+  s('proj_type',      d['Project Type']);
+  s('proj_client',    d['Client / Broadcaster']);
+  s('proj_production',d['Production Company']);
+  s('proj_fps',       d['Framerate']);
+  s('proj_season',    d['Season / Episode Info']);
+  s('proj_ep_format', d['Episode Number Format']);
+  s('doc_ver',        d['Document Version']);
+  s('doc_date',       d['Document Date']);
+  s('doc_author',     d['Document Author']);
+  // ── Contacts – WestFX ───────────────────────────────────────────────────────
+  s('c_co_n', d['VFX Coordinator']);      s('c_co_e', d['VFX Coordinator Email']); s('c_co_t', d['VFX Coordinator Phone']);
+  s('c_pr_n', d['VFX Producer']);         s('c_pr_e', d['VFX Producer Email']);    s('c_pr_t', d['VFX Producer Phone']);
+  s('c_su_n', d['VFX Supervisor']);       s('c_su_e', d['VFX Supervisor Email']);  s('c_su_t', d['VFX Supervisor Phone']);
+  s('c_ed_n', d['VFX Editor']);           s('c_ed_e', d['VFX Editor Email']);      s('c_ed_t', d['VFX Editor Phone']);
+  s('c_qc_n', d['VFX QC']);               s('c_qc_e', d['VFX QC Email']);          s('c_qc_t', d['VFX QC Phone']);
+  // ── Contacts – Post ─────────────────────────────────────────────────────────
+  s('c_di_h', d['Post Facility / DI House']);
+  s('c_di_n', d['DI Engineer']);          s('c_di_c', d['DI Engineer Contact']);
+  s('c_pp_n', d['Post Producer']);        s('c_pp_e', d['Post Producer Email']);   s('c_pp_t', d['Post Producer Phone']);
+  s('c_ps_n', d['Post Supervisor']);      s('c_ps_e', d['Post Supervisor Email']); s('c_ps_t', d['Post Supervisor Phone']);
+  // ── Distro ──────────────────────────────────────────────────────────────────
+  s('pull_distro', d['PULL Distro']);
+  s('sub_distro',  d['SUBMISSION Distro']);
+  // ── Camera ──────────────────────────────────────────────────────────────────
+  s('cam_id',       d['Primary Camera ID']);
+  s('cam_body',     d['Primary Camera Body']);
+  s('cam_res',      d['Native Capture Resolution']);
+  s('cam_pull_res', d['VFX Pull Resolution']);
+  s('cam_cs',       d['Recording Color Space']);
+  s('cam_lens',     d['Lens Type']);
+  s('cam_dailies',  d['Preview / Dailies Color Space']);
+  s('cam_lut',      d['Show LUT / CDL']);
+  // ── Format ──────────────────────────────────────────────────────────────────
+  s('fmt_aspect',    d['Presentation Aspect Ratio']);
+  s('fmt_container', d['Delivery Container Format']);
+  s('fmt_active',    d['Active Picture Area']);
+  s('fmt_vfx_res',   d['Plate Resolution']);
+  s('fmt_final_del', d['Final Show Delivery Resolution']);
+  s('fmt_grade',     d['Primary Grade']);
+  // ── Color Pipeline ───────────────────────────────────────────────────────────
+  s('col_plate', d['Plate Color Space (EXR incoming)']);
+  s('col_work',  d['VFX Working Color Space']);
+  s('col_out',   d['Output Color Space (EXR outgoing)']);
+  s('col_exr',   d['EXR Format']);
+  s('col_prev',  d['Preview Color Space (H264)']);
+  s('col_bcast', d['Broadcast Delivery Color Space']);
+  // ── Technical Checklist ─────────────────────────────────────────────────────
+  s('tc_framing',   d['Framing Charts received']);
+  s('tc_lens_grid', d['Lens Grid received']);
+  s('tc_cdl',       d['CDL values available']);
+  s('tc_lut',       d['Show / Seq / Shot LUT']);
+  // ── Naming ──────────────────────────────────────────────────────────────────
+  s('nm_ver',   d['Version Number Padding']);
+  s('nm_frame', d['Frame Number Padding']);
+  s('nm_steps', d['Shot Number Increments']);
+  s('nm_seq',      d['Sequence Level in Shot Name']);
+  s('nm_seq_code', d['Sequence Code Example']);
+  // ── Handles ─────────────────────────────────────────────────────────────────
+  s('hd_std',   d['Standard Handles']);
+  s('hd_ldv',   d['Lookdev / Pre-Viz Handles']);
+  s('hd_slate', d['Slate Frame']);
+  s('hd_start', d['Start Frame']);
+  s('hd_final', d['Final EXR Deliveries']);
+  s('hd_apl',   d['After Picture Lock']);
+  // FFOA is derived – not restored
+  // ── File Transfer ────────────────────────────────────────────────────────────
+  s('ft_in',               d['Transfer Platform (DI → Vendor)']);
+  s('ft_out',              d['Transfer Platform (Vendor → DI)']);
+  s('ft_server',           d['Server / Root Path']);
+  s('ft_editorial',        d['Platform with Editorial']);
+  s('ft_in_folder',        d['Folder Structure: Turnover (incoming)']);
+  s('ft_out_folder',       d['Folder Structure: Submission (outgoing)']);
+  s('ft_editorial_folder', d['Folder Path – Editorial']);
+  s('ft_di_folder',        d['Folder Path – DI / EXRs']);
+  s('ft_platesrc',         d['Who Delivers Plates']);
+  s('ft_tracking',         d['VFX Tracking Tool']);
+  s('ft_avid',             d['Avid Subclip Workflow']);
+  s('ft_counts',           d['Count Sheets Format']);
+  // ── Vendor Delivery ──────────────────────────────────────────────────────────
+  s('vd_h2_c',    d['Preview Codec']);
+  s('vd_h2_r',    d['Preview Resolution']);
+  s('vd_h2_cs',   d['Preview Color Space (H264 out)']);
+  s('vd_dnx',     d['DNxHD Codec']);
+  s('vd_dnx_cont',d['DNxHD Container']);
+  s('vd_dnx_res', d['DNxHD Resolution']);
+  s('vd_exr_when',d['EXR Delivery Timing']);
+  s('vd_exr_cs',  d['EXR Output Color Space']);
+  s('vd_exr_res', d['EXR Output Resolution']);
+  s('vd_alpha',   d['Alpha / Mattes Delivery']);
+  s('rv_plat',    d['Review Platform']);
+  s('rv_recip',   d['Review Recipients']);
+  // ── Special ─────────────────────────────────────────────────────────────────
+  s('sp_sec',         d['Studio Security Guidelines']);
+  s('sp_minres',      d['Minimum VFX Resolution']);
+  s('sp_server_link', d['Techspecs on Server']);
+  s('sp_hd',          d['HD Delivery Note']);
+  s('sp_notes',       d['Additional Notes']);
+
+  // ── JSON TABLES ─────────────────────────────────────────────────────────────
+  // Vendors
+  if(d['Vendors JSON']) try {
+    const vList = JSON.parse(d['Vendors JSON']);
+    document.getElementById('vendors-list').innerHTML='';
+    vCnt=0;
+    vList.forEach(v=>{
+      addVendor();
+      const id='v'+vCnt;
+      sv(id+'_n',v.name||''); sv(id+'_c',v.code||''); sv(id+'_cn',v.cn||'');
+      sv(id+'_e',v.email||''); sv(id+'_t',v.tel||''); sv(id+'_pe',v.pe||'');
+      loaded++;
+    });
+  }catch(e){}
+  // Additional Cameras
+  if(d['Additional Cameras JSON']) try {
+    const cList = JSON.parse(d['Additional Cameras JSON']);
+    document.getElementById('extra-cams').innerHTML='';
+    cList.forEach(c=>{
+      addCamRow();
+      const ins=document.querySelectorAll('#extra-cams tr:last-child input');
+      if(ins[0]) ins[0].value=c.id||'';
+      if(ins[1]) ins[1].value=c.body||'';
+      if(ins[2]) ins[2].value=c.res||'';
+      if(ins[3]) ins[3].value=c.pullRes||'';
+      if(ins[4]) ins[4].value=c.cs||'';
+      loaded++;
+    });
+  }catch(e){}
+  // Plate Idents
+  if(d['Plate Idents JSON']) try {
+    const iList = JSON.parse(d['Plate Idents JSON']);
+    document.getElementById('idents-body').innerHTML='';
+    iList.forEach(i=>{ addIdentRow(); const ins=document.querySelectorAll('#idents-body tr:last-child input'); if(ins[0])ins[0].value=i.a||''; if(ins[1])ins[1].value=i.b||''; });
+    loaded++;
+  }catch(e){}
+  // Task Types
+  if(d['Task Types JSON']) try {
+    const tList = JSON.parse(d['Task Types JSON']);
+    document.getElementById('tasks-body').innerHTML='';
+    tList.forEach(t=>{ addTaskRow(); const ins=document.querySelectorAll('#tasks-body tr:last-child input'); if(ins[0])ins[0].value=t.a||''; if(ins[1])ins[1].value=t.b||''; });
+    loaded++;
+  }catch(e){}
+
+  // Store timestamp + project name for conflict detection on next save
+  window._lastModifiedOnLoad = d['_last_modified'] || '';
+  window._loadedProject      = d['Projektname']    || '';
+
+  // Open all sections & trigger toggles
+  toggleFeature(); toggleCH(); toggleSeqCode();
+  document.querySelectorAll('.sec-hdr:not(.open)').forEach(h=>h.click());
+
+  const banner=document.getElementById('load-banner');
+  document.getElementById('load-banner-msg').textContent=loaded+' Felder aus Google Sheets geladen.';
+  banner.classList.add('show');
+  setTimeout(()=>banner.classList.remove('show'),12000);
+}
+
+// ── INIT ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded',()=>{
+  document.getElementById('doc_date').value=new Date().toISOString().split('T')[0];
+  addVendor(); // start with one vendor block
+});
+</script>
+</body>
+</html>
