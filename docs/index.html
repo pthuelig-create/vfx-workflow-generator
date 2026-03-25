@@ -1405,7 +1405,7 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
 
 <div class="sh2">General Vendor Rules</div>
 <div class="steps">
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">Blanking to <strong>${aspect}</strong> in previews and DNxHD. <strong>Never</strong> blanked in EXRs</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Blanking to <strong>${aspect}</strong> in previews${vdDnxCS.toLowerCase().includes('blanked')?` and DNxHD`:''}.${vdDnxCS.toLowerCase().includes('blanked')?'':` DNxHD: ${vdDnxCS}.`} <strong>Never</strong> blanked in EXRs</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">No VFX work in overscan areas unless explicitly requested by VFX Production</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Never bake CDL or LUT values into Final EXRs</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Provide ETAs per shot within first week after delivery</div></div>
