@@ -1293,7 +1293,7 @@ ${showFor(['ED','VND','DI'])?`
   <thead><tr><th>Code</th><th>Description</th></tr></thead>
   <tbody>${taskRows}</tbody>
 </table>
-<p class="note">QT and EXR must always share the same version number. Version numbers must be unique and incremental – never reuse a version number regardless of change size.</p>
+<p class="note">QT and EXR must always share the same version number. Version numbers must be unique and incremental – never reuse a version number.</p>
 `:''}
 
 <!-- 04 TURNOVER -->
@@ -1344,10 +1344,10 @@ ${showFor(['VND','DI'])?`
   <tbody>
     <tr><td class="lbl" style="width:42%">Format</td><td>${colExr}</td></tr>
     <tr><td class="lbl">Color Space</td><td>${colPlate}</td></tr>
-    <tr><td class="lbl">Resolution</td><td>${h(rv('fmt_vfx_res'))}</td></tr>
+    <tr><td class="lbl">Resolution</td><td>${h(rv('fmt_vfx_res'))} · aspect preserved</td></tr>
     <tr><td class="lbl">Handles</td><td>${hdFrames} frames head &amp; tail</td></tr>
     <tr><td class="lbl">Source TC</td><td>Embedded in EXR header – timecode as recorded on set</td></tr>
-    <tr><td class="lbl">Source Filename</td><td>Original clip name embedded in EXR metadata – must not be stripped or renamed internally</td></tr>
+    <tr><td class="lbl">Source Filename</td><td>Original clip name embedded in EXR metadata – must not be stripped or renamed internally · must be placed as reel name / tape id</td></tr>
     <tr><td class="lbl">Camera Metadata</td><td>Must be fully preserved from original OCF (camera model, lens, ISO, white balance, etc.)</td></tr>
     <tr><td class="lbl">Pixel Aspect</td><td>Preserved as shot – do not desqueeze plates</td></tr>
     <tr><td class="lbl">Start Frame</td><td>1001 (= first handle frame). Slate on 1000</td></tr>
@@ -1365,7 +1365,6 @@ ${ftInF?`<div class="sh2">Folder Structure</div><p class="sh-p mono" style="back
     <tr><td class="lbl">Lens Grids</td><td>${tcLens}</td></tr>
     <tr><td class="lbl">CDL Values</td><td>${tcCDL}</td></tr>
     <tr><td class="lbl">Show LUT / CDLs</td><td>${tcLut}</td></tr>
-    <tr><td class="lbl">Grain Plates</td><td>Provided upon request</td></tr>
   </tbody>
 </table>
 
@@ -1376,13 +1375,13 @@ ${showFor(['VND'])?`
 <div class="sh1">06 · Vendor Delivery <span class="aud-badge b-vnd">VND</span></div>
 
 <div class="sh2">Version Zero (required before starting VFX work)</div>
-<p class="sh-p">Each vendor must deliver a <strong>Version Zero</strong> from the main plate only. This must be reviewed and approved by VFX Editorial / Production before actual VFX work begins.</p>
+<p class="sh-p">Each vendor must deliver a <strong>Version Zero</strong> from the main plate only. Version Zero is required for sophisticated shots or any shot where incorrect plate delivery would cause overages. This must be reviewed and approved by VFX Editorial before actual VFX work begins.</p>
 <table class="sht" style="max-width:600px">
   <thead><tr><th>Deliverable</th><th>Spec</th></tr></thead>
   <tbody>
     <tr><td class="lbl">H264 / MP4 Preview</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS}</td></tr>
     <tr><td class="lbl">DNxHD MXF (Editorial)</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
-    <tr><td class="lbl">EXR</td><td>Main plate with retimes &amp; repos applied · no handles</td></tr>
+    <tr><td class="lbl">EXR</td><td>Main plate with retimes applied · no handles</td></tr>
   </tbody>
 </table>
 
@@ -1406,11 +1405,12 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
 <div class="sh2">General Vendor Rules</div>
 <div class="steps">
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Blanking to <strong>${aspect}</strong> in previews on Flow${vdDnxCS.toLowerCase().includes('blanked')&&!vdDnxCS.toLowerCase().includes('no blanking')?' and DNxHD':''}. DNxHD: ${vdDnxCS.includes(',')?vdDnxCS.split(',').pop().trim():vdDnxCS}. <strong>Never</strong> blanked in EXRs</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">No VFX work in overscan areas unless explicitly requested by VFX Production</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Avoid VFX work in overscan areas. If the work naturally extends into overscan and presents itself in a simple, straightforward way, it is acceptable without explicit request – otherwise contact VFX Production first</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Never bake CDL or LUT values into Final EXRs</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Provide ETAs per shot within first week after delivery</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version. The version name in ${ftTracking||rvPlat} must always match the delivered EXR's version number</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version – must match the upload folder name exactly (e.g. <span class="mono">${code}_${epEx}${seqEx}001_010_comp_AS_${vex}</span>)</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">The delivery folder name must match the delivery playlist name in ${ftTracking||rvPlat}</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Only the last approved version needs to be rendered as EXR and submitted to DI</div></div>
   ${secLabel?`<div class="step"><div class="step-num">⚠</div><div class="step-txt"><strong>${secLabel}</strong></div></div>`:''}
   ${spMinRes?`<div class="step"><div class="step-num">⚠</div><div class="step-txt">Minimum resolution for VFX work: ${spMinRes} – contact VFX Production if below</div></div>`:''}
@@ -1422,15 +1422,15 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
     <tr><td class="lbl" style="width:38%">Slate Frame</td><td>Frame 1000 · 1 frame before handles · same resolution as subsequent frames</td></tr>
     <tr><td class="lbl">Required Slate Fields</td><td>Vendor · Show Name · VFX Scope of Work · Shot &amp; Version · Delivery Date · Submission Notes · Submitted For · Thumbnail (mid-frame with CDL/LUT applied)</td></tr>
     <tr><td class="lbl">Burn-in Style (finals)</td><td>White · 50% opacity · placed in overscan / blanking area outside active picture</td></tr>
-    <tr><td class="lbl">Burn-in Fields</td><td>TAPE ID · Source TC · Clip Name (= plate name) · Master TC · VFX Scope of Work</td></tr>
+    <tr><td class="lbl">Burn-in Fields</td><td>Source TC · Clip Name · Master TC · VFX Scope of Work</td></tr>
   </tbody>
 </table>
 
 `:''}
 
 <!-- 07 REVIEW -->
-${showFor(['VND','DI'])?`
-<div class="sh1">07 · Review Process <span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
+${showFor(['ED','VND','DI'])?`
+<div class="sh1">07 · Review Process <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
 
 <div class="sh2">Platform: ${rvPlat}</div>
 <div class="steps">
@@ -1440,9 +1440,9 @@ ${showFor(['VND','DI'])?`
   <div class="step"><div class="step-num">4</div><div class="step-txt">VFX Editorial cuts in DNxHD and checks frame range, retimes, repos, and scope match against editorial reference</div></div>
   <div class="step"><div class="step-num">5</div><div class="step-txt">${vdExrWhen==='every_version'
     ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version.`
-    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version.`
+    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version, in the field "EXR Delivery".`
   }</div></div>
-  <div class="step"><div class="step-num">6</div><div class="step-txt">VFX Production signs off when a positive QC pass has been confirmed by Post Supervisor and all studio deliverables are complete</div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-txt">VFX Production signs off when a positive QC pass has been confirmed and all studio deliverables are complete</div></div>
 </div>
 
 <div class="sh2">Status Overview</div>
@@ -1456,7 +1456,7 @@ ${showFor(['VND','DI'])?`
     <tr><td class="lbl">Pending Revision</td><td>Vendor waiting for feedback</td></tr>
     <tr><td class="lbl">Proposed as Final</td><td>WestFX proposes shot as creative final – minor tech fixes outstanding</td></tr>
     <tr><td class="lbl">Director Approved</td><td>Creative approval granted → Final EXR delivery can proceed</td></tr>
-    <tr><td class="lbl">Final Approved</td><td>QC, DI and grading passed – shot complete</td></tr>
+    <tr><td class="lbl">Final Approved</td><td>QC, DI and grading passed – shot complete (on some shows only)</td></tr>
   </tbody>
 </table>
 <p class="note">Only vendors set "Pending Review". All other statuses are managed by WestFX Production.</p>
