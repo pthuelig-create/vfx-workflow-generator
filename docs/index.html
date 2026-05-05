@@ -1311,7 +1311,13 @@ function generate(aud){
   const idents=getTableData('idents-body');
   const tasks=getTableData('tasks-body');
 
-  // Burn-ins & plate pull
+  const hdStd=rv('hd_std'),hdLdv=h(gv('hd_ldv'));
+  const hdSlate=h(gv('hd_slate')),hdStart=h(gv('hd_start'));
+  const hdFinal=h(gv('hd_final')),hdApl=h(gv('hd_apl'));
+  const hdFrames=hdStd==='__other__'?'?':hdStd;
+  const ffoa=1001+(parseInt(hdFrames)||10);
+
+  // Burn-ins & plate pull (after hdStd is available)
   const burnIns=getBurnIns();
   const pdScanHead=gv('pd_scan_head'),pdVfxH=gv('pd_vfx_handles'),pdCutRange=gv('pd_cut_range'),pdScanTail=gv('pd_scan_tail');
   const vfxHandleForDiagram=pdVfxH||(hdStd==='__other__'?'10':hdStd);
@@ -1320,12 +1326,6 @@ function generate(aud){
   // Section notes
   const n01=h(gv('notes_01')),n02=h(gv('notes_02')),n03=h(gv('notes_03')),n04=h(gv('notes_04'));
   const n05=h(gv('notes_05')),n06=h(gv('notes_06')),n07=h(gv('notes_07'));
-
-  const hdStd=rv('hd_std'),hdLdv=h(gv('hd_ldv'));
-  const hdSlate=h(gv('hd_slate')),hdStart=h(gv('hd_start'));
-  const hdFinal=h(gv('hd_final')),hdApl=h(gv('hd_apl'));
-  const hdFrames=hdStd==='__other__'?'?':hdStd;
-  const ffoa=1001+(parseInt(hdFrames)||10);
 
   const ftIn=h(rv('ft_in')),ftOut=h(rv('ft_out'));
   const ftServer=h(gv('ft_server')),ftEditorial=h(rv('ft_editorial'));
