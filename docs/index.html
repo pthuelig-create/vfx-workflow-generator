@@ -570,14 +570,15 @@ input,select,textarea{font-family:inherit;font-size:12px}
       <div class="field var">
         <label>Naming Structure <span class="hint">defines the shot name components</span></label>
         <select id="nm_mode" onchange="toggleNamingMode()">
-          <option value="standard">Standard – Code + Episode + Scene + Shot (e.g. CRI_E101_001_010)</option>
-          <option value="simple">Simple – Code + Shot only (e.g. XXX_0000, no scene/episode in shot name)</option>
+          <option value="standard">Code + Episode + Scene + Shot  (e.g. CRI_E101_001_010)</option>
+          <option value="ep_shot">Code + Episode + Shot  (e.g. CRI_E101_0010 – no scene)</option>
+          <option value="scene_shot">Code + Scene + Shot  (e.g. CRI_001_010 – no episode)</option>
+          <option value="simple">Code + Shot only  (e.g. XXX_0000 – no episode, no scene)</option>
         </select>
       </div>
     </div>
 
-    <div id="nm_standard_info" class="info-box">🎬 VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot). Das Namensschema wird automatisch aus der Naming Convention übernommen.</div>
-    <div id="nm_simple_info" class="info-box" style="display:none">🎬 <strong>Simple mode:</strong> Shot names consist of Show Code + Shot Number only – e.g. <strong>XXX_0010</strong>. No scene or episode number in the shot name. Shot number is 4 digits and increments in steps of 10 (0010, 0020…).</div>
+    <div id="nm_info_box" class="info-box">🎬 VFX-Shots werden nach dem Shot-Namensschema gemarkert: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot).</div>
 
     <div id="nm_standard_scene_info" class="info-box" style="margin-top:14px">
       📌 <strong>Scene = Scene number</strong> from the screenplay / script (3 digits, e.g. 001, 042, 115). <strong>Shot</strong> = shot number within that scene, in steps of 10. Version numbers must be unique and never reused. QT and EXR always share the same version number.
@@ -1016,15 +1017,27 @@ function toggleFeature(){
 // ── NAMING MODE TOGGLE ───────────────────────────────────────────────────────
 function toggleNamingMode(){
   const mode = document.getElementById('nm_mode').value;
-  const isSimple = mode === 'simple';
-  // Show/hide info boxes
-  document.getElementById('nm_standard_info').style.display   = isSimple ? 'none' : 'block';
-  document.getElementById('nm_simple_info').style.display     = isSimple ? 'block' : 'none';
-  document.getElementById('nm_standard_scene_info').style.display = isSimple ? 'none' : 'block';
-  // In simple mode: hide Sequence Level field, show 4-digit shot pad hint
-  document.getElementById('nm_seq_wrap').style.display        = isSimple ? 'none' : 'flex';
-  document.getElementById('nm_seq_code_wrap').style.display   = 'none';
-  // In simple mode: pre-select 4-digit shot pad
+  const hasScene = (mode === 'standard' || mode === 'scene_shot');
+  const hasEp    = (mode === 'standard' || mode === 'ep_shot');
+  const isSimple = (mode === 'simple');
+
+  // Update info box
+  const infoTexts = {
+    standard:   '🎬 Shot Name: <strong>CODE_E101_001_010</strong> — Show Code + Episode + Scene + Shot',
+    ep_shot:    '🎬 Shot Name: <strong>CODE_E101_0010</strong> — Show Code + Episode + Shot (kein Scene)',
+    scene_shot: '🎬 Shot Name: <strong>CODE_001_010</strong> — Show Code + Scene + Shot (keine Episode)',
+    simple:     '🎬 Shot Name: <strong>CODE_0010</strong> — Show Code + Shot only (kein Scene, keine Episode)'
+  };
+  document.getElementById('nm_info_box').innerHTML = infoTexts[mode] || infoTexts.standard;
+
+  // Scene info box: only relevant when scene is part of name
+  document.getElementById('nm_standard_scene_info').style.display = hasScene ? 'block' : 'none';
+
+  // Sequence level only makes sense when scene is present
+  document.getElementById('nm_seq_wrap').style.display      = hasScene ? 'flex' : 'none';
+  document.getElementById('nm_seq_code_wrap').style.display = 'none';
+
+  // Shot number padding: auto-4 for simple (globally unique), otherwise user choice
   if(isSimple) document.getElementById('nm_shot_pad').value = '4';
 }
 
@@ -1303,11 +1316,13 @@ function generate(aud){
 
   const nmVer=rv('nm_ver'),nmFrame=h(gv('nm_frame')),nmSteps=h(gv('nm_steps'));
   const nmMode=gv('nm_mode')||'standard';
-  const nmSimple=(nmMode==='simple');
-  const nmShotPad=nmSimple?'4':(gv('nm_shot_pad')||'3');
-  const shotEx=nmShotPad==='4'?'0010':'010';
-  const nmSeq=(!nmSimple)&&(gv('nm_seq')==='Yes');
-  const nmSeqCode=h((gv('nm_seq_code')||'SEQ').toUpperCase());
+  const nmHasEp    = (nmMode==='standard'||nmMode==='ep_shot');
+  const nmHasScene = (nmMode==='standard'||nmMode==='scene_shot');
+  const nmSimple   = (nmMode==='simple'); // CODE+SHOT only
+  const nmShotPad  = nmSimple?'4':(gv('nm_shot_pad')||'3');
+  const shotEx     = nmShotPad==='4'?'0010':'010';
+  const nmSeq      = nmHasScene&&(gv('nm_seq')==='Yes');
+  const nmSeqCode  = h((gv('nm_seq_code')||'SEQ').toUpperCase());
   const idents=getTableData('idents-body');
   const tasks=getTableData('tasks-body');
 
@@ -1346,35 +1361,30 @@ function generate(aud){
   const spNotes=h(gv('sp_notes'));
 
   // Build naming example
-  const epPart = (isFeature||nmSimple) ? '' :
-    (epFmt==='E###'?'<span class="pill p-ep">E101</span><span class="p-sep">_</span>':
-     epFmt==='S##E##'?'<span class="pill p-ep">S02E01</span><span class="p-sep">_</span>':
-     epFmt==='###'?'<span class="pill p-ep">201</span><span class="p-sep">_</span>':
-     `<span class="pill p-ep">${h(epFmt)}</span><span class="p-sep">_</span>`);
-
+  // epPart: only if mode has episode AND not a feature film
+  const showEp = nmHasEp && !isFeature;
+  const epPart = showEp
+    ? (epFmt==='E###'?'<span class="pill p-ep">E101</span><span class="p-sep">_</span>':
+       epFmt==='S##E##'?'<span class="pill p-ep">S02E01</span><span class="p-sep">_</span>':
+       epFmt==='###'?'<span class="pill p-ep">201</span><span class="p-sep">_</span>':
+       `<span class="pill p-ep">${h(epFmt)}</span><span class="p-sep">_</span>`)
+    : '';
   const vpill=nmVer.startsWith('v####')?'<span class="pill p-ver">v0001</span>':'<span class="pill p-ver">v001</span>';
   const vex  =nmVer.startsWith('v####')?'v0001':'v001';
-  const epEx = (isFeature||nmSimple)?'':(epFmt==='E###'?'E101_':epFmt==='S##E##'?'S02E01_':epFmt==='###'?'201_':`${h(epFmt)}_`);
+  const epEx = showEp?(epFmt==='E###'?'E101_':epFmt==='S##E##'?'S02E01_':epFmt==='###'?'201_':`${h(epFmt)}_`):'';
 
   const seqPart = nmSeq ? `<span class="pill p-scene" style="background:#e0f2f1;color:#004d40">${nmSeqCode}</span><span class="p-sep">_</span>` : '';
   const seqEx   = nmSeq ? nmSeqCode+'_' : '';
 
-  // SIMPLE MODE: CODE_0000_ident_vXXX.FRAME.exr (no scene, no episode)
-  const namingViz = nmSimple
-    ? `<span class="pill p-code">${code}</span><span class="p-sep">_</span><span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">mp1</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-frame">1001</span><span class="p-sep">.</span><span class="pill p-ext">exr</span>`
-    : `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">mp1</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-frame">1001</span><span class="p-sep">.</span><span class="pill p-ext">exr</span>`;
-  const namingExTxt = nmSimple
-    ? `${code}_${shotEx}_mp1_${vex}.1001.exr`
-    : `${code}_${epEx}${seqEx}001_${shotEx}_mp1_${vex}.1001.exr`;
-  const markerNamingViz = nmSimple
-    ? `<span class="pill p-code">${code}</span><span class="p-sep">_</span><span class="pill p-shot">${shotEx}</span>`
-    : `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">${shotEx}</span>`;
-  const markerNamingExTxt = nmSimple
-    ? `${code}_${shotEx}`
-    : `${code}_${epEx}${seqEx}001_${shotEx}`;
-  const versionViz = nmSimple
-    ? `<span class="pill p-code">${code}</span><span class="p-sep">_</span><span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">comp</span><span class="p-sep">_</span><span class="pill p-vend">AS</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-ext">mov</span>`
-    : `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">comp</span><span class="p-sep">_</span><span class="pill p-vend">AS</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-ext">mov</span>`;
+  // Build naming viz from components
+  const scenePill = nmHasScene ? `<span class="pill p-scene">001</span><span class="p-sep">_</span>` : '';
+  const sceneEx   = nmHasScene ? '001_' : '';
+
+  const namingViz = `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}${scenePill}<span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">mp1</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-frame">1001</span><span class="p-sep">.</span><span class="pill p-ext">exr</span>`;
+  const namingExTxt = `${code}_${epEx}${seqEx}${sceneEx}${shotEx}_mp1_${vex}.1001.exr`;
+  const markerNamingViz = `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}${scenePill}<span class="pill p-shot">${shotEx}</span>`;
+  const markerNamingExTxt = `${code}_${epEx}${seqEx}${sceneEx}${shotEx}`;
+  const versionViz = `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}${scenePill}<span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">comp</span><span class="p-sep">_</span><span class="pill p-vend">AS</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-ext">mov</span>`;
 
   const identRows=idents.map(i=>`<tr><td class="lbl mono">${h(i.a)}</td><td>${h(i.b)}</td></tr>`).join('');
   const taskRows=tasks.map(t=>`<tr><td class="lbl mono">${h(t.a)}</td><td>${h(t.b)}</td></tr>`).join('');
@@ -1566,10 +1576,10 @@ ${showFor(['ED','VND','DI'])?`
   <thead><tr><th>Component</th><th>Description</th><th>Format</th></tr></thead>
   <tbody>
     <tr><td class="lbl p-code" style="background:#dce9f8">Show Code</td><td>Unique project identifier</td><td class="mono">${code}</td></tr>
-    ${(!isFeature&&!nmSimple)?`<tr><td class="lbl" style="background:#e8f5e9">Episode</td><td>Episode number in agreed format</td><td class="mono">${epFmtH}</td></tr>`:''}
+    ${(nmHasEp&&!isFeature)?`<tr><td class="lbl" style="background:#e8f5e9">Episode</td><td>Episode number in agreed format</td><td class="mono">${epFmtH}</td></tr>`:''}
     ${nmSeq?`<tr><td class="lbl" style="background:#e0f2f1;color:#004d40">Sequence</td><td>Sequence group identifier</td><td class="mono">SEQ</td></tr>`:''}
-    ${!nmSimple?`<tr><td class="lbl" style="background:#fff3e0">Scene</td><td><strong>Scene number from the screenplay / script</strong> (3 digits)</td><td class="mono">001–999</td></tr>`:''}
-    <tr><td class="lbl" style="background:#fce4d6">Shot</td><td>${nmSimple?'Shot number (project-wide, unique, 4 digits)':'Shot number within scene'}</td><td class="mono">${shotEx}, ${nmShotPad==='4'?'0020':'020'}… (steps of 10)</td></tr>
+    ${nmHasScene?`<tr><td class="lbl" style="background:#fff3e0">Scene</td><td><strong>Scene number from the screenplay / script</strong> (3 digits)</td><td class="mono">001–999</td></tr>`:''}
+    <tr><td class="lbl" style="background:#fce4d6">Shot</td><td>${(!nmHasScene&&!nmHasEp)?'Shot number (project-wide, unique, 4 digits)':'Shot number within scene'}</td><td class="mono">${shotEx}, ${nmShotPad==='4'?'0020':'020'}… (steps of 10)</td></tr>
     <tr><td class="lbl" style="background:#f3e5f5">Plate Ident</td><td>Plate type identifier (see table below)</td><td class="mono">mp1, bg2, el1…</td></tr>
     <tr><td class="lbl" style="background:#e0f2f1">Vendor Code</td><td>Abbreviated vendor identifier</td><td class="mono">AS, UPP, RUR…</td></tr>
     <tr><td class="lbl" style="background:#e8eaf6">Version</td><td>Sequential version – never reuse a number</td><td class="mono">${nmVer}</td></tr>
