@@ -174,9 +174,32 @@ input,select,textarea{font-family:inherit;font-size:12px}
 /* Inline audience badge */
 .aud-badge{display:inline-block;padding:1px 7px;border-radius:10px;font-size:9px;font-weight:700;margin-left:6px;vertical-align:middle}
 
+/* ── BURN-IN CHECKBOXES ─────────────────────────────────────────────────────── */
+.bi-grid{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0}
+.bi-check{display:flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid #ccc;border-radius:4px;background:#f9f9f9;cursor:pointer;font-size:11px;user-select:none}
+.bi-check input[type=checkbox]{width:14px;height:14px;accent-color:#2E75B6;cursor:pointer}
+.bi-check.active{background:#edf4ff;border-color:#2E75B6;color:#1a4870}
+
+/* ── PLATE PULL DIAGRAM ─────────────────────────────────────────────────────── */
+.ppd-wrap{margin:14px 0}
+.ppd-title{font-size:11px;font-weight:700;color:#444;margin-bottom:5px;text-transform:uppercase;letter-spacing:.3px}
+.ppd-table{width:100%;border-collapse:collapse;font-size:10.5px;table-layout:fixed}
+.ppd-table th{padding:5px 4px;text-align:center;font-weight:700;font-size:10px;border:1px solid rgba(0,0,0,.15)}
+.ppd-table td{padding:4px 4px;text-align:center;border:1px solid rgba(0,0,0,.15);font-family:monospace;font-size:10px}
+.ppd-scan{background:#FFD966;color:#5a4000}
+.ppd-vfx {background:#9B72CF;color:#fff}
+.ppd-cut {background:#70AD47;color:#fff}
+.ppd-slate{background:#B4C7E7;color:#1a3260}
+
+/* ── SECTION NOTES ──────────────────────────────────────────────────────────── */
+.sec-notes{border-top:1px dashed #e0e0e0;margin-top:14px;padding-top:10px}
+.sec-notes label{font-size:10.5px;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:.3px}
+.sec-notes textarea{background:#fffdf5;border-color:#e8c840;font-size:11px;color:#333}
+.doc-sec-notes{background:#fffdf0;border:1px solid #e8c840;border-radius:4px;padding:8px 12px;font-size:11px;color:#555;margin-top:8px;white-space:pre-wrap}
+
 /* ── PRINT ─────────────────────────────────────────────────────────────────── */
 @media print{
-  #form-view,.prev-ctrl,.gen-bar{display:none!important}
+  #form-view,.prev-ctrl,.gen-bar,#load-banner{display:none!important}
   #preview-view{display:block!important}
   #sheet{padding:0;max-width:100%}
   .cv{padding:20px 0}
@@ -233,7 +256,7 @@ input,select,textarea{font-family:inherit;font-size:12px}
       </div>
       <div class="field var">
         <label>Show Code <span class="hint">3–4 chars, used in all filenames</span></label>
-        <input type="text" id="proj_code" placeholder="e.g. CRI, HLG, TIG, SEL" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+        <input type="text" id="proj_code" placeholder="e.g. CRI, HLG, TIG, SEL" maxlength="6" oninput="this.value=this.value.toUpperCase(); updateDelFmtDefault()">
       </div>
       <div class="field var">
         <label>Project Type</label>
@@ -298,6 +321,9 @@ input,select,textarea{font-family:inherit;font-size:12px}
         <input type="text" id="doc_author" placeholder="e.g. Patrick Thülig, VFX Coordinator">
       </div>
     </div>
+    <div class="sec-notes">
+      <div class="field var"><label>Project-Specific Notes (Section 01)</label><textarea id="notes_01" rows="2" placeholder="Projektspezifische Ergänzungen für diesen Abschnitt…"></textarea></div>
+    </div>
   </div>
 </div>
 
@@ -346,12 +372,15 @@ input,select,textarea{font-family:inherit;font-size:12px}
     <div class="fg">
       <div class="field var">
         <label>PULL Distro (emails, comma-separated)</label>
-        <textarea id="pull_distro" rows="3" placeholder="editor@…, vfxeditor@…, postproducer@…"></textarea>
+        <textarea id="pull_distro" rows="2" placeholder="editor@…, vfxeditor@…, postproducer@…"></textarea>
       </div>
       <div class="field var">
         <label>SUBMISSION Distro (emails, comma-separated)</label>
-        <textarea id="sub_distro" rows="3" placeholder="christopher@westfx.net, patrick@westfx.net, qc@…"></textarea>
+        <textarea id="sub_distro" rows="2" placeholder="christopher@westfx.net, patrick@westfx.net, qc@…"></textarea>
       </div>
+    </div>
+    <div class="sec-notes">
+      <div class="field var"><label>Project-Specific Notes (Section 02)</label><textarea id="notes_02" rows="2" placeholder="Projektspezifische Ergänzungen für diesen Abschnitt…"></textarea></div>
     </div>
   </div>
 </div>
@@ -525,6 +554,9 @@ input,select,textarea{font-family:inherit;font-size:12px}
         <input class="other-inp" id="tc_lut_other" placeholder="Specify LUT workflow…">
       </div>
     </div>
+    <div class="sec-notes">
+      <div class="field var"><label>Project-Specific Notes (Section 03)</label><textarea id="notes_03" rows="2" placeholder="Projektspezifische Ergänzungen für diesen Abschnitt…"></textarea></div>
+    </div>
   </div>
 </div>
 
@@ -534,10 +566,22 @@ input,select,textarea{font-family:inherit;font-size:12px}
   <div class="sec-body">
 
     <div class="sub-hdr">Marker Naming <span style="font-weight:400;font-size:10px;color:#999">(Editorial)</span></div>
-    <div class="info-box">🎬 VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot). Das Namensschema wird automatisch aus der Naming Convention übernommen.</div>
+    <div class="fg g1" style="margin-bottom:10px">
+      <div class="field var">
+        <label>Naming Structure <span class="hint">defines the shot name components</span></label>
+        <select id="nm_mode" onchange="toggleNamingMode()">
+          <option value="standard">Code + Episode + Scene + Shot  (e.g. CRI_E101_001_010)</option>
+          <option value="ep_shot">Code + Episode + Shot  (e.g. CRI_E101_0010 – no scene)</option>
+          <option value="scene_shot">Code + Scene + Shot  (e.g. CRI_001_010 – no episode)</option>
+          <option value="simple">Code + Shot only  (e.g. XXX_0000 – no episode, no scene)</option>
+        </select>
+      </div>
+    </div>
 
-    <div class="info-box" style="margin-top:14px">
-      📌 <strong>Scene = Scene number</strong> from the screenplay / script (3 digits, e.g. 001, 042, 115). <strong>Shot</strong> = shot number within that scene, in steps of 10 (010, 020 …). Version numbers must be unique and never reused. QT and EXR always share the same version number.
+    <div id="nm_info_box" class="info-box">🎬 VFX-Shots werden nach dem Shot-Namensschema gemarkert: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot).</div>
+
+    <div id="nm_standard_scene_info" class="info-box" style="margin-top:14px">
+      📌 <strong>Scene = Scene number</strong> from the screenplay / script (3 digits, e.g. 001, 042, 115). <strong>Shot</strong> = shot number within that scene, in steps of 10. Version numbers must be unique and never reused. QT and EXR always share the same version number.
     </div>
     <div class="fg g3">
       <div class="field var">
@@ -552,6 +596,13 @@ input,select,textarea{font-family:inherit;font-size:12px}
       <div class="field std"><label>Frame Number Padding</label><input type="text" id="nm_frame" value="4 digits – starts at 1001 (.1001.exr)"></div>
       <div class="field std"><label>Shot Number Increments</label><input type="text" id="nm_steps" value="010, 020, 030 … (steps of 10)"></div>
       <div class="field var">
+        <label>Shot Number Padding</label>
+        <select id="nm_shot_pad">
+          <option value="3">3 digits (010, 020 … 100)</option>
+          <option value="4">4 digits (0010, 0020 … 1000)</option>
+        </select>
+      </div>
+      <div class="field var" id="nm_seq_wrap">
         <label>Sequence Level in Shot Name <span class="hint">optional – e.g. GLM_BEG_001_0010</span></label>
         <select id="nm_seq" onchange="toggleSeqCode()">
           <option value="No">No – Scene directly after Show Code / Episode (standard)</option>
@@ -599,6 +650,9 @@ input,select,textarea{font-family:inherit;font-size:12px}
       </tbody>
     </table>
     <button class="add-row-btn" onclick="addTaskRow()">+ Add task</button>
+    <div class="sec-notes">
+      <div class="field var"><label>Project-Specific Notes (Section 04)</label><textarea id="notes_04" rows="2" placeholder="Projektspezifische Ergänzungen für diesen Abschnitt…"></textarea></div>
+    </div>
   </div>
 </div>
 
@@ -623,6 +677,30 @@ input,select,textarea{font-family:inherit;font-size:12px}
       <div class="field std"><label>After Picture Lock (incoming plates)</label><input type="text" id="hd_apl" value="Handles on request only"></div>
     </div>
     <div class="info-box">Count Sheets are maintained in the online VFX Breakdown. They include: start & end frame, source timecode, clip name, cut range, duration, handle length, respeed / repositioning info, and all associated plates per shot.</div>
+
+    <div class="sub-hdr">Plate Pull Diagram <span style="font-weight:400;font-size:10px;color:#999">(optional – für das generierte Dokument)</span></div>
+    <div class="info-box">Definiert die Frame-Bereiche für das Plate Pull / VFX Submission Diagramm. VFX Handle = Standard Handle von oben (wenn hier leer). Scan Handles = zusätzliche Frames, die DI über die VFX Handles hinaus mitscannt.</div>
+    <div class="fg g4">
+      <div class="field var">
+        <label>Scan Handles – Head <span class="hint">frames vor VFX-Handles</span></label>
+        <input type="number" id="pd_scan_head" placeholder="e.g. 24" min="0">
+      </div>
+      <div class="field var">
+        <label>VFX Handles <span class="hint">leer = Standard Handles von oben</span></label>
+        <input type="number" id="pd_vfx_handles" placeholder="auto" min="0">
+      </div>
+      <div class="field var">
+        <label>Cut Range <span class="hint">Frames im Cut</span></label>
+        <input type="number" id="pd_cut_range" placeholder="e.g. 50" min="1">
+      </div>
+      <div class="field var">
+        <label>Scan Handles – Tail <span class="hint">frames nach VFX-Handles</span></label>
+        <input type="number" id="pd_scan_tail" placeholder="e.g. 21" min="0">
+      </div>
+    </div>
+    <div class="sec-notes">
+      <div class="field var"><label>Project-Specific Notes (Section 05)</label><textarea id="notes_05" rows="2" placeholder="Projektspezifische Ergänzungen für diesen Abschnitt…"></textarea></div>
+    </div>
   </div>
 </div>
 
@@ -695,9 +773,9 @@ input,select,textarea{font-family:inherit;font-size:12px}
         <input class="other-inp" id="ft_tracking_other" placeholder="Specify…">
       </div>
       <div class="field var">
-        <label>Avid Subclip Workflow</label>
+        <label>Turnover Editorial → DI Workflow</label>
         <select id="ft_avid">
-          <option value="Yes">Yes – Avid subclip workflow is used</option>
+          <option value="Yes">Yes – Avid/Premiere subclip workflow is used</option>
           <option value="No">No</option>
         </select>
       </div>
@@ -712,6 +790,27 @@ input,select,textarea{font-family:inherit;font-size:12px}
         </select>
         <input class="other-inp" id="ft_counts_other" placeholder="Specify…">
       </div>
+    </div>
+
+    <div class="sub-hdr">Edit Reference Burn-Ins <span style="font-weight:400;font-size:10px;color:#999">(für VFX Review Refs – nicht für die Clean Online Refs)</span></div>
+    <div class="info-box">Definiere, welche Burn-Ins auf den Edit References (mit Burn-Ins) enthalten sein müssen. Standard-Burn-Ins sind vorausgewählt – abwählen wenn nicht benötigt.</div>
+    <div class="bi-grid" id="burnins-grid">
+      <label class="bi-check active"><input type="checkbox" id="bi_master_tc" checked> Master Timecode</label>
+      <label class="bi-check active"><input type="checkbox" id="bi_src_name" checked> Source File Name</label>
+      <label class="bi-check active"><input type="checkbox" id="bi_src_tc" checked> Source Timecode</label>
+      <label class="bi-check active"><input type="checkbox" id="bi_shot_name" checked> VFX Shot Name</label>
+      <label class="bi-check"><input type="checkbox" id="bi_scope"> VFX Scope of Work</label>
+      <label class="bi-check"><input type="checkbox" id="bi_tape_id"> Tape ID</label>
+      <label class="bi-check"><input type="checkbox" id="bi_vendor"> Vendor Name</label>
+    </div>
+    <div class="fg" style="margin-top:8px">
+      <div class="field var">
+        <label>Zusätzliche Burn-Ins <span class="hint">kommagetrennt – werden im Dokument aufgelistet</span></label>
+        <input type="text" id="bi_custom" placeholder="e.g. Production Company, Director, VFX Version">
+      </div>
+    </div>
+    <div class="sec-notes">
+      <div class="field var"><label>Project-Specific Notes (Section 06)</label><textarea id="notes_06" rows="2" placeholder="Projektspezifische Ergänzungen für diesen Abschnitt…"></textarea></div>
     </div>
   </div>
 </div>
@@ -742,6 +841,9 @@ input,select,textarea{font-family:inherit;font-size:12px}
       <div class="field std"><label>Container</label><input type="text" id="vd_dnx_cont" value="OP-Atom MXF"></div>
       <div class="field std"><label>Resolution</label><input type="text" id="vd_dnx_res" value="HD 1920×1080 · 25fps"></div>
     </div>
+    <div class="fg g1">
+      <div class="field std"><label>Color Space</label><input type="text" id="vd_dnx_cs" value="Rec.709 + Show LUT baked in, blanked to aspect ratio"></div>
+    </div>
 
     <div class="sub-hdr">Final EXR (outgoing from Vendor)</div>
     <div class="fg g3">
@@ -751,6 +853,11 @@ input,select,textarea{font-family:inherit;font-size:12px}
           <option value="finals_only">Finals only – once Director Approved or Proposed as Final</option>
           <option value="every_version">Every version – EXR with each submission</option>
         </select>
+      </div>
+      <div class="field var">
+        <label>Delivery Folder Naming Format <span class="hint">Standard – editierbar</span></label>
+        <input type="text" id="vd_del_fmt" placeholder="e.g. [ProjectCode]_[VendorCode]_[YYMMDD]_[NNN]">
+        <div style="font-size:11px;color:#888;margin-top:4px">Platzhalter werden im Dokument erklärt. Standard wird automatisch mit Show Code befüllt.</div>
       </div>
       <div class="field var">
         <label>EXR Output Color Space</label>
@@ -786,6 +893,9 @@ input,select,textarea{font-family:inherit;font-size:12px}
         <input class="other-inp" id="rv_plat_other" placeholder="Specify…">
       </div>
       <div class="field var"><label>Internal Review Recipients (playlist sharing)</label><input type="text" id="rv_recip" placeholder="e.g. Frank Kaminski, Christopher Lenke, Patrick Thülig"></div>
+    </div>
+    <div class="sec-notes">
+      <div class="field var"><label>Project-Specific Notes (Section 07)</label><textarea id="notes_07" rows="2" placeholder="Projektspezifische Ergänzungen für diesen Abschnitt…"></textarea></div>
     </div>
   </div>
 </div>
@@ -865,16 +975,33 @@ function tog(hdr){
   hdr.nextElementSibling.classList.toggle('open');
 }
 
+// ── DELIVERY FOLDER FORMAT DEFAULT ──────────────────────────────────────────
+function updateDelFmtDefault(){
+  const fld = document.getElementById('vd_del_fmt');
+  if(!fld) return;
+  const code = (document.getElementById('proj_code')?.value||'').trim().toUpperCase();
+  // Only auto-fill if the field is still empty or was previously auto-filled (not manually edited)
+  if(!fld.dataset.userEdited){
+    fld.value = code ? `${code}_[VendorCode]_[YYMMDD]_[NNN]` : '[ProjectCode]_[VendorCode]_[YYMMDD]_[NNN]';
+  }
+}
+// Mark as user-edited when manually changed
+document.addEventListener('DOMContentLoaded',function(){
+  const fld=document.getElementById('vd_del_fmt');
+  if(fld) fld.addEventListener('input',function(){ this.dataset.userEdited='1'; });
+});
+
 // ── OTHER DROPDOWN ───────────────────────────────────────────────────────────
 function chkOther(sel){
   const oi = document.getElementById(sel.id+'_other');
   if(oi) oi.classList.toggle('show', sel.value==='__other__');
 }
 
-// Resolve value: if 'other', use text input
+// Resolve value: if 'other', use text input; if 'tbd', return empty
 function rv(id){
   const el=document.getElementById(id);
   if(!el) return '';
+  if(el.tagName==='SELECT' && el.value==='tbd') return '';
   if(el.tagName==='SELECT' && el.value==='__other__'){
     const oi=document.getElementById(id+'_other');
     return oi ? oi.value.trim()||'(specify)' : '(specify)';
@@ -884,11 +1011,55 @@ function rv(id){
 // Plain value
 function gv(id){ const e=document.getElementById(id); return e?e.value.trim():''; }
 
+// ── TBD OPTION INJECTION ──────────────────────────────────────────────────────
+// Inject "– TBD –" as first option into all content-related selects.
+// Structural / binary selects are excluded.
+document.addEventListener('DOMContentLoaded', function(){
+  const EXCLUDE = new Set([
+    'proj_type','proj_ep_format','nm_seq','nm_shot_pad',
+    'ft_avid','vd_exr_when','sp_sec'
+  ]);
+  document.querySelectorAll('select').forEach(sel=>{
+    if(!sel.id || EXCLUDE.has(sel.id) || sel.id.endsWith('_other')) return;
+    const opt=document.createElement('option');
+    opt.value='tbd';
+    opt.textContent='– TBD –';
+    sel.insertBefore(opt, sel.firstChild);
+  });
+});
+
 // ── FEATURE / SERIES TOGGLE ──────────────────────────────────────────────────
 function toggleFeature(){
   const type=rv('proj_type');
   const hide=type==='Feature Film'||type==='Short Film';
   document.getElementById('series-fields').style.display=hide?'none':'block';
+}
+
+// ── NAMING MODE TOGGLE ───────────────────────────────────────────────────────
+function toggleNamingMode(){
+  const mode = document.getElementById('nm_mode').value;
+  const hasScene = (mode === 'standard' || mode === 'scene_shot');
+  const hasEp    = (mode === 'standard' || mode === 'ep_shot');
+  const isSimple = (mode === 'simple');
+
+  // Update info box
+  const infoTexts = {
+    standard:   '🎬 Shot Name: <strong>CODE_E101_001_010</strong> — Show Code + Episode + Scene + Shot',
+    ep_shot:    '🎬 Shot Name: <strong>CODE_E101_0010</strong> — Show Code + Episode + Shot (kein Scene)',
+    scene_shot: '🎬 Shot Name: <strong>CODE_001_010</strong> — Show Code + Scene + Shot (keine Episode)',
+    simple:     '🎬 Shot Name: <strong>CODE_0010</strong> — Show Code + Shot only (kein Scene, keine Episode)'
+  };
+  document.getElementById('nm_info_box').innerHTML = infoTexts[mode] || infoTexts.standard;
+
+  // Scene info box: only relevant when scene is part of name
+  document.getElementById('nm_standard_scene_info').style.display = hasScene ? 'block' : 'none';
+
+  // Sequence level only makes sense when scene is present
+  document.getElementById('nm_seq_wrap').style.display      = hasScene ? 'flex' : 'none';
+  document.getElementById('nm_seq_code_wrap').style.display = 'none';
+
+  // Shot number padding: auto-4 for simple (globally unique), otherwise user choice
+  if(isSimple) document.getElementById('nm_shot_pad').value = '4';
 }
 
 // ── SEQUENCE CODE TOGGLE ─────────────────────────────────────────────────────
@@ -941,6 +1112,137 @@ function addTaskRow(){
   const tr=document.createElement('tr');
   tr.innerHTML='<td><input type="text" placeholder="code"></td><td><input type="text" placeholder="Description"></td><td><button onclick="removeRow(this)" style="background:none;border:none;color:#c00;cursor:pointer">✕</button></td>';
   tb.appendChild(tr);
+}
+
+// ── BURN-IN COLLECTOR ────────────────────────────────────────────────────────
+function getBurnIns(){
+  const items = [];
+  const checks = [
+    ['bi_master_tc',  'Master Timecode'],
+    ['bi_src_name',   'Source File Name'],
+    ['bi_src_tc',     'Source Timecode'],
+    ['bi_shot_name',  'VFX Shot Name'],
+    ['bi_scope',      'VFX Scope of Work'],
+    ['bi_tape_id',    'Tape ID'],
+    ['bi_vendor',     'Vendor Name']
+  ];
+  checks.forEach(([id, label])=>{
+    const el = document.getElementById(id);
+    if(el && el.checked) items.push(label);
+  });
+  const custom = gv('bi_custom');
+  if(custom) custom.split(',').map(s=>s.trim()).filter(Boolean).forEach(s=>items.push(s));
+  return items;
+}
+
+// ── PLATE PULL DIAGRAM BUILDER ────────────────────────────────────────────────
+function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
+  if(!scanHead && !cutRange && !scanTail) return ''; // skip if no data
+  const sh = parseInt(scanHead)||0;
+  const vh = parseInt(vfxH)||10;
+  const cr = parseInt(cutRange)||50;
+  const st = parseInt(scanTail)||sh;
+
+  // Frame numbers (absolute, starting from 1001 as VFX handle start)
+  const scanHeadStart = 1001 - vh - sh;
+  const vfxHeadStart  = 1001 - vh;
+  const cutStart      = 1001;
+  const cutEnd        = 1000 + cr;
+  const vfxTailStart  = 1001 + cr;
+  const vfxTailEnd    = 1000 + cr + vh;
+  const scanTailStart = 1001 + cr + vh;
+  const scanTailEnd   = 1000 + cr + vh + st;
+  const slateFrame    = 1000;
+
+  // Column widths proportional (total parts)
+  const total = (sh||0) + vh + cr + vh + (st||0);
+  const pct = n => Math.max(5, Math.round(n/total*100));
+  const shPct = sh ? pct(sh) : 0;
+  const vhPct = pct(vh);
+  const crPct = pct(cr);
+  const stPct = st ? pct(st) : 0;
+
+  const colGroup = `
+    ${sh?`<col style="width:${shPct}%">`:''}
+    <col style="width:${vhPct}%">
+    <col style="width:${crPct}%">
+    <col style="width:${vhPct}%">
+    ${st?`<col style="width:${stPct}%">`:''}
+  `;
+
+  // PLATE PULL rows
+  const ppHeaderCells =
+    (sh?`<th class="ppd-scan">Scan Handles</th>`:'') +
+    `<th class="ppd-vfx">VFX Handles</th>` +
+    `<th class="ppd-cut">Cut Range</th>` +
+    `<th class="ppd-vfx">VFX Handles</th>` +
+    (st?`<th class="ppd-scan">Scan Handles</th>`:'');
+
+  const ppCountCells =
+    (sh?`<td class="ppd-scan">1 … ${sh}</td>`:'') +
+    `<td class="ppd-vfx">1 … ${vh}</td>` +
+    `<td class="ppd-cut">1 … ${cr}</td>` +
+    `<td class="ppd-vfx">1 … ${vh}</td>` +
+    (st?`<td class="ppd-scan">1 … ${st}</td>`:'');
+
+  const ppFrameCells =
+    (sh?`<td class="ppd-scan">${scanHeadStart} … ${vfxHeadStart-1+vh-vh}</td>`:'') +
+    `<td class="ppd-vfx">${vfxHeadStart} … ${1000}</td>` +
+    `<td class="ppd-cut">${cutStart} … ${cutEnd}</td>` +
+    `<td class="ppd-vfx">${vfxTailStart} … ${vfxTailEnd}</td>` +
+    (st?`<td class="ppd-scan">${scanTailStart} … ${scanTailEnd}</td>`:'');
+
+  // Fix scan head end frame
+  const scanHeadEnd = vfxHeadStart - 1;
+
+  const ppFrameCellsFixed =
+    (sh?`<td class="ppd-scan">${scanHeadStart} … ${scanHeadEnd}</td>`:'') +
+    `<td class="ppd-vfx">${vfxHeadStart} … 1000</td>` +
+    `<td class="ppd-cut">${cutStart} … ${cutEnd}</td>` +
+    `<td class="ppd-vfx">${vfxTailStart} … ${vfxTailEnd}</td>` +
+    (st?`<td class="ppd-scan">${scanTailStart} … ${scanTailEnd}</td>`:'');
+
+  // VFX SUBMISSION (no scan handles, slate frame = 1000)
+  const subHeaderCells =
+    `<th class="ppd-slate" style="width:${Math.max(4, Math.round(1/total*100))}%">Slate</th>` +
+    `<th class="ppd-vfx">VFX Handles</th>` +
+    `<th class="ppd-cut">Cut Range</th>` +
+    `<th class="ppd-vfx">VFX Handles</th>`;
+
+  const subCountCells =
+    `<td class="ppd-slate">1</td>` +
+    `<td class="ppd-vfx">1 … ${vh}</td>` +
+    `<td class="ppd-cut">1 … ${cr}</td>` +
+    `<td class="ppd-vfx">1 … ${vh}</td>`;
+
+  const subFrameCells =
+    `<td class="ppd-slate">${slateFrame}</td>` +
+    `<td class="ppd-vfx">${vfxHeadStart} … 1000</td>` +
+    `<td class="ppd-cut">${cutStart} … ${cutEnd}</td>` +
+    `<td class="ppd-vfx">${vfxTailStart} … ${vfxTailEnd}</td>`;
+
+  return `
+<div class="ppd-wrap">
+  <div class="ppd-title">Plate Pull</div>
+  <table class="ppd-table"><colgroup>${colGroup}</colgroup>
+    <thead><tr>${ppHeaderCells}</tr></thead>
+    <tbody>
+      <tr>${ppCountCells}</tr>
+      <tr>${ppFrameCellsFixed}</tr>
+    </tbody>
+  </table>
+</div>
+<div class="ppd-wrap" style="margin-top:16px">
+  <div class="ppd-title">VFX Submission</div>
+  <table class="ppd-table">
+    <thead><tr>${subHeaderCells}</tr></thead>
+    <tbody>
+      <tr>${subCountCells}</tr>
+      <tr>${subFrameCells}</tr>
+    </tbody>
+  </table>
+</div>
+<p class="note" style="margin-top:6px">Slate = Frame 1000 (1 frame before VFX handle head). VFX Handles: ${vh} frames. Cut Range: ${cr} frames.${sh?' Scan Handles Head: '+sh+' frames.':''}${st?' Scan Handles Tail: '+st+' frames.':''}</p>`;
 }
 
 // ── DATA COLLECTORS ──────────────────────────────────────────────────────────
@@ -1034,8 +1336,14 @@ function generate(aud){
   const tcCDL=h(gv('tc_cdl')),tcLut=h(rv('tc_lut'));
 
   const nmVer=rv('nm_ver'),nmFrame=h(gv('nm_frame')),nmSteps=h(gv('nm_steps'));
-  const nmSeq=gv('nm_seq')==='Yes';
-  const nmSeqCode=h((gv('nm_seq_code')||'SEQ').toUpperCase());
+  const nmMode=gv('nm_mode')||'standard';
+  const nmHasEp    = (nmMode==='standard'||nmMode==='ep_shot');
+  const nmHasScene = (nmMode==='standard'||nmMode==='scene_shot');
+  const nmSimple   = (nmMode==='simple'); // CODE+SHOT only
+  const nmShotPad  = nmSimple?'4':(gv('nm_shot_pad')||'3');
+  const shotEx     = nmShotPad==='4'?'0010':'010';
+  const nmSeq      = nmHasScene&&(gv('nm_seq')==='Yes');
+  const nmSeqCode  = h((gv('nm_seq_code')||'SEQ').toUpperCase());
   const idents=getTableData('idents-body');
   const tasks=getTableData('tasks-body');
 
@@ -1045,6 +1353,16 @@ function generate(aud){
   const hdFrames=hdStd==='__other__'?'?':hdStd;
   const ffoa=1001+(parseInt(hdFrames)||10);
 
+  // Burn-ins & plate pull (after hdStd is available)
+  const burnIns=getBurnIns();
+  const pdScanHead=gv('pd_scan_head'),pdVfxH=gv('pd_vfx_handles'),pdCutRange=gv('pd_cut_range'),pdScanTail=gv('pd_scan_tail');
+  const vfxHandleForDiagram=pdVfxH||(hdStd==='__other__'?'10':hdStd);
+  const plateDiagram=buildPlatePullDiagram(pdScanHead,vfxHandleForDiagram,pdCutRange,pdScanTail);
+
+  // Section notes
+  const n01=h(gv('notes_01')),n02=h(gv('notes_02')),n03=h(gv('notes_03')),n04=h(gv('notes_04'));
+  const n05=h(gv('notes_05')),n06=h(gv('notes_06')),n07=h(gv('notes_07'));
+
   const ftIn=h(rv('ft_in')),ftOut=h(rv('ft_out'));
   const ftServer=h(gv('ft_server')),ftEditorial=h(rv('ft_editorial'));
   const ftInF=h(gv('ft_in_folder')),ftOutF=h(gv('ft_out_folder'));
@@ -1053,10 +1371,19 @@ function generate(aud){
   const ftAvid=gv('ft_avid'),ftCounts=h(rv('ft_counts'));
 
   const vdH2C=h(gv('vd_h2_c')),vdH2R=h(gv('vd_h2_r')),vdH2CS=h(gv('vd_h2_cs'));
-  const vdDnx=h(rv('vd_dnx')),vdDnxCont=h(gv('vd_dnx_cont')),vdDnxRes=h(gv('vd_dnx_res'));
+  const vdDnx=h(rv('vd_dnx')),vdDnxCont=h(gv('vd_dnx_cont')),vdDnxRes=h(gv('vd_dnx_res')),vdDnxCS=h(gv('vd_dnx_cs'));
   const vdExrCS=h(rv('vd_exr_cs')),vdExrRes=h(gv('vd_exr_res'));
   const vdExrWhen=gv('vd_exr_when')||'finals_only';
   const vdAlpha=h(rv('vd_alpha'));
+  // Delivery folder naming: use custom input or build default from show code
+  const _delFmtRaw = gv('vd_del_fmt').trim();
+  const delFmt = h(_delFmtRaw || (code!=='PROJ' ? `${code}_[VendorCode]_[YYMMDD]_[NNN]` : '[ProjectCode]_[VendorCode]_[YYMMDD]_[NNN]'));
+  const delFmtEx1 = _delFmtRaw ? _delFmtRaw.replace('[ProjectCode]',code).replace('[VendorCode]','NW').replace('[YYMMDD]','260327').replace('[NNN]','001')
+                                : (code!=='PROJ' ? `${code}_NW_260327_001` : 'CRI_NW_260327_001');
+  const delFmtEx2 = _delFmtRaw ? _delFmtRaw.replace('[ProjectCode]',code).replace('[VendorCode]','NW').replace('[YYMMDD]','260327').replace('[NNN]','002')
+                                : (code!=='PROJ' ? `${code}_NW_260327_002` : 'CRI_NW_260327_002');
+  const delFmtEx3 = _delFmtRaw ? _delFmtRaw.replace('[ProjectCode]',code).replace('[VendorCode]','AS').replace('[YYMMDD]','260327').replace('[NNN]','001')
+                                : (code!=='PROJ' ? `${code}_AS_260327_001` : 'CRI_AS_260327_001');
   const rvPlat=h(rv('rv_plat')),rvRecip=h(gv('rv_recip'));
 
   const spSec=rv('sp_sec'),spMinRes=h(gv('sp_minres'));
@@ -1064,23 +1391,30 @@ function generate(aud){
   const spNotes=h(gv('sp_notes'));
 
   // Build naming example
-  const epPart = isFeature ? '' :
-    (epFmt==='E###'?'<span class="pill p-ep">E101</span><span class="p-sep">_</span>':
-     epFmt==='S##E##'?'<span class="pill p-ep">S02E01</span><span class="p-sep">_</span>':
-     epFmt==='###'?'<span class="pill p-ep">201</span><span class="p-sep">_</span>':
-     `<span class="pill p-ep">${h(epFmt)}</span><span class="p-sep">_</span>`);
-
+  // epPart: only if mode has episode AND not a feature film
+  const showEp = nmHasEp && !isFeature;
+  const epPart = showEp
+    ? (epFmt==='E###'?'<span class="pill p-ep">E101</span><span class="p-sep">_</span>':
+       epFmt==='S##E##'?'<span class="pill p-ep">S02E01</span><span class="p-sep">_</span>':
+       epFmt==='###'?'<span class="pill p-ep">201</span><span class="p-sep">_</span>':
+       `<span class="pill p-ep">${h(epFmt)}</span><span class="p-sep">_</span>`)
+    : '';
   const vpill=nmVer.startsWith('v####')?'<span class="pill p-ver">v0001</span>':'<span class="pill p-ver">v001</span>';
   const vex  =nmVer.startsWith('v####')?'v0001':'v001';
-  const epEx = isFeature?'':(epFmt==='E###'?'E101_':epFmt==='S##E##'?'S02E01_':epFmt==='###'?'201_':`${h(epFmt)}_`);
+  const epEx = showEp?(epFmt==='E###'?'E101_':epFmt==='S##E##'?'S02E01_':epFmt==='###'?'201_':`${h(epFmt)}_`):'';
 
   const seqPart = nmSeq ? `<span class="pill p-scene" style="background:#e0f2f1;color:#004d40">${nmSeqCode}</span><span class="p-sep">_</span>` : '';
   const seqEx   = nmSeq ? nmSeqCode+'_' : '';
-  const namingViz=`<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">010</span><span class="p-sep">_</span><span class="pill p-ident">mp1</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-frame">1001</span><span class="p-sep">.</span><span class="pill p-ext">exr</span>`;
-  const namingExTxt=`${code}_${epEx}${seqEx}001_010_mp1_${vex}.1001.exr`;
-  const markerNamingViz=`<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">010</span>`;
-  const markerNamingExTxt=`${code}_${epEx}${seqEx}001_010`;
-  const versionViz=`<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}<span class="pill p-scene">001</span><span class="p-sep">_</span><span class="pill p-shot">010</span><span class="p-sep">_</span><span class="pill p-ident">comp</span><span class="p-sep">_</span><span class="pill p-vend">AS</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-ext">mov</span>`;
+
+  // Build naming viz from components
+  const scenePill = nmHasScene ? `<span class="pill p-scene">001</span><span class="p-sep">_</span>` : '';
+  const sceneEx   = nmHasScene ? '001_' : '';
+
+  const namingViz = `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}${scenePill}<span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">mp1</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-frame">1001</span><span class="p-sep">.</span><span class="pill p-ext">exr</span>`;
+  const namingExTxt = `${code}_${epEx}${seqEx}${sceneEx}${shotEx}_mp1_${vex}.1001.exr`;
+  const markerNamingViz = `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}${scenePill}<span class="pill p-shot">${shotEx}</span>`;
+  const markerNamingExTxt = `${code}_${epEx}${seqEx}${sceneEx}${shotEx}`;
+  const versionViz = `<span class="pill p-code">${code}</span><span class="p-sep">_</span>${epPart}${seqPart}${scenePill}<span class="pill p-shot">${shotEx}</span><span class="p-sep">_</span><span class="pill p-ident">comp</span><span class="p-sep">_</span><span class="pill p-vend">AS</span><span class="p-sep">_</span>${vpill}<span class="p-sep">.</span><span class="pill p-ext">mov</span>`;
 
   const identRows=idents.map(i=>`<tr><td class="lbl mono">${h(i.a)}</td><td>${h(i.b)}</td></tr>`).join('');
   const taskRows=tasks.map(t=>`<tr><td class="lbl mono">${h(t.a)}</td><td>${h(t.b)}</td></tr>`).join('');
@@ -1129,6 +1463,7 @@ function generate(aud){
   </tbody>
 </table>
 
+${n01?`<div class="doc-sec-notes"><strong>Project Notes – Project Information:</strong> ${n01}</div>`:''}
 <!-- 01 CONTACTS -->
 <div class="sh1">01 · Contacts <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
 <table class="sht">
@@ -1148,6 +1483,7 @@ function generate(aud){
 </table>
 ${pullD?`<div class="sh2">PULL Distro List</div><p class="sh-p">${pullD}</p>`:''}
 ${subD?`<div class="sh2">SUBMISSION Distro List</div><p class="sh-p">${subD}</p>`:''}
+${n02?`<div class="doc-sec-notes"><strong>Project Notes – Contacts:</strong> ${n02}</div>`:''}
 
 <!-- 02 TECH SPECS -->
 ${showFor(['VND','DI'])?`
@@ -1191,11 +1527,10 @@ ${extraCams.length>0?`
 <div class="sh2">Color Pipeline Overview</div>
 <table class="sht" style="max-width:550px">
   <tbody>
-    <tr><td class="lbl" style="width:42%">Input Color Space (Plates from DI)</td><td>${colPlate}</td></tr>
-    <tr><td class="lbl">VFX Working Color Space</td><td>${colWork}</td></tr>
-    <tr><td class="lbl">Output / Render Color Space (to DI)</td><td>${colOut}</td></tr>
-    <tr><td class="lbl">Viewing / Preview Color Space</td><td>${colPrev}</td></tr>
-    <tr><td class="lbl">Broadcast Delivery Color Space</td><td>${colBcast}</td></tr>
+    ${colPlate?`<tr><td class="lbl" style="width:42%">Input Color Space (Plates from DI)</td><td>${colPlate}</td></tr>`:''}
+    ${colOut?`<tr><td class="lbl">Output / Render Color Space (to DI)</td><td>${colOut}</td></tr>`:''}
+    ${colPrev?`<tr><td class="lbl">Viewing / Preview Color Space</td><td>${colPrev}</td></tr>`:''}
+    ${colBcast?`<tr><td class="lbl">Broadcast Delivery Color Space</td><td>${colBcast}</td></tr>`:''}
   </tbody>
 </table>
 
@@ -1244,6 +1579,10 @@ ${extraCams.length>0?`
   </tbody>
 </table>
 
+${plateDiagram}
+${n05?`<div class="doc-sec-notes"><strong>Project Notes – Handles & Framecount:</strong> ${n05}</div>`:''}
+${n03?`<div class="doc-sec-notes"><strong>Project Notes – Camera & Technical Specs:</strong> ${n03}</div>`:''}
+
 `:''}
 
 <!-- 03 NAMING -->
@@ -1251,7 +1590,7 @@ ${showFor(['ED','VND','DI'])?`
 <div class="sh1">03 · Naming Convention <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
 
 <div class="sh2">Marker Naming <span class="aud-badge b-ed">ED</span></div>
-<p class="sh-p">VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert:</p>
+<p class="sh-p">${nmSimple?'VFX-Shots werden nach dem Shot-Namensschema gemarkert (Code + Shot):':'VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert:'}</p>
 <p class="sh-p" style="margin-bottom:6px">${markerNamingViz}</p>
 <p class="sh-p note">Example: <span class="mono">${markerNamingExTxt}</span></p>
 
@@ -1267,10 +1606,10 @@ ${showFor(['ED','VND','DI'])?`
   <thead><tr><th>Component</th><th>Description</th><th>Format</th></tr></thead>
   <tbody>
     <tr><td class="lbl p-code" style="background:#dce9f8">Show Code</td><td>Unique project identifier</td><td class="mono">${code}</td></tr>
-    ${!isFeature?`<tr><td class="lbl" style="background:#e8f5e9">Episode</td><td>Episode number in agreed format</td><td class="mono">${epFmtH}</td></tr>`:''}
+    ${(nmHasEp&&!isFeature)?`<tr><td class="lbl" style="background:#e8f5e9">Episode</td><td>Episode number in agreed format</td><td class="mono">${epFmtH}</td></tr>`:''}
     ${nmSeq?`<tr><td class="lbl" style="background:#e0f2f1;color:#004d40">Sequence</td><td>Sequence group identifier</td><td class="mono">SEQ</td></tr>`:''}
-    <tr><td class="lbl" style="background:#fff3e0">Scene</td><td><strong>Scene number from the screenplay / script</strong> (3 digits)</td><td class="mono">001–999</td></tr>
-    <tr><td class="lbl" style="background:#fce4d6">Shot</td><td>Shot number within scene</td><td class="mono">010, 020… (steps of 10)</td></tr>
+    ${nmHasScene?`<tr><td class="lbl" style="background:#fff3e0">Scene</td><td><strong>Scene number from the screenplay / script</strong> (3 digits)</td><td class="mono">001–999</td></tr>`:''}
+    <tr><td class="lbl" style="background:#fce4d6">Shot</td><td>${(!nmHasScene&&!nmHasEp)?'Shot number (project-wide, unique, 4 digits)':'Shot number within scene'}</td><td class="mono">${shotEx}, ${nmShotPad==='4'?'0020':'020'}… (steps of 10)</td></tr>
     <tr><td class="lbl" style="background:#f3e5f5">Plate Ident</td><td>Plate type identifier (see table below)</td><td class="mono">mp1, bg2, el1…</td></tr>
     <tr><td class="lbl" style="background:#e0f2f1">Vendor Code</td><td>Abbreviated vendor identifier</td><td class="mono">AS, UPP, RUR…</td></tr>
     <tr><td class="lbl" style="background:#e8eaf6">Version</td><td>Sequential version – never reuse a number</td><td class="mono">${nmVer}</td></tr>
@@ -1290,7 +1629,8 @@ ${showFor(['ED','VND','DI'])?`
   <thead><tr><th>Code</th><th>Description</th></tr></thead>
   <tbody>${taskRows}</tbody>
 </table>
-<p class="note">QT and EXR must always share the same version number. Version numbers must be unique and incremental – never reuse a version number regardless of change size.</p>
+<p class="note">QT and EXR must always share the same version number. Version numbers must be unique and incremental – never reuse a version number.</p>
+${n04?`<div class="doc-sec-notes"><strong>Project Notes – Naming Convention:</strong> ${n04}</div>`:''}
 `:''}
 
 <!-- 04 TURNOVER -->
@@ -1302,7 +1642,7 @@ ${showFor(['ED','DI'])?`
 <div class="sh2">Turnover Package Contents</div>
 <div class="steps">
   <div class="step"><div class="step-num">1</div><div class="step-txt"><strong>Pull EDL &amp; AAF</strong> – FILE32 EDL including CDL values, plus AAF per vendor</div></div>
-  <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Edit References</strong> – with burn-ins (for VFX review) AND clean online refs (for conform) · ${vdH2C} · ${container} · ${fps}</div></div>
+  <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Edit References</strong> – with burn-ins (for VFX review) AND clean online refs (for conform)${[vdH2C,container,fps].filter(Boolean).length?' · '+[vdH2C,container,fps].filter(Boolean).join(' · '):''}${burnIns.length?`<br><span class="note">Burn-ins required: <strong>${burnIns.join(', ')}</strong></span>`:''}</div></div>
   <div class="step"><div class="step-num">3</div><div class="step-txt"><strong>EXR Plates</strong> – ${colExr} · ${colPlate} · ${hdFrames}fr handles · source TC embedded · camera metadata preserved</div></div>
   <div class="step"><div class="step-num">4</div><div class="step-txt"><strong>LUT Files</strong> – .cube format · min. 33×33×33 data points · must be applied on original camera recording color space</div></div>
   <div class="step"><div class="step-num">5</div><div class="step-txt"><strong>Count Sheets</strong> (via ${ftCounts}) – start/end frame, source TC, clip name, cut range, duration, handles, respeed/reframe notes, all plates per shot</div></div>
@@ -1320,13 +1660,15 @@ ${ftInF?`<div class="sh2">Folder Structure (Incoming DI → VFX)</div><p class="
   </tbody>
 </table>
 
+${n06?`<div class="doc-sec-notes"><strong>Project Notes – File Transfer & Turnover:</strong> ${n06}</div>`:''}
+
 ${ftAvid==='Yes'?`
-<div class="sh2">Avid Subclip Workflow <span class="aud-badge b-ed">ED</span></div>
+<div class="sh2">Turnover Editorial → DI <span class="aud-badge b-ed">ED</span></div>
 <div class="steps">
   <div class="step"><div class="step-num">1</div><div class="step-txt"><strong>Create Turnover Bin</strong> – name: <span class="mono">YYYYMMDD_${code}_vfxturnover_###</span></div></div>
   <div class="step"><div class="step-num">2</div><div class="step-txt"><strong>Create Subclips</strong> for all layers of each VFX shot (including handles) – name according to naming convention</div></div>
   <div class="step"><div class="step-num">3</div><div class="step-txt"><strong>Build Pull Sequence</strong> with all plate subclips – export FILE32 EDL – arrange clips by ascending name</div></div>
-  <div class="step"><div class="step-num">4</div><div class="step-txt"><strong>Export Edit Refs</strong> with burn-ins: TAPE ID, Source TC, Clip Name (= plate name), Master TC, VFX Scope of Work</div></div>
+  <div class="step"><div class="step-num">4</div><div class="step-txt"><strong>Export Edit Refs</strong> with burn-ins: ${burnIns.length?burnIns.join(', '):'TAPE ID, Source TC, Clip Name (= plate name), Master TC, VFX Scope of Work'}</div></div>
   <div class="step"><div class="step-num">5</div><div class="step-txt">⚠ <strong>No mixdowns</strong> – preserve link to OCF / original camera metadata at all times</div></div>
 </div>`:''}
 
@@ -1336,24 +1678,9 @@ ${ftAvid==='Yes'?`
 ${showFor(['VND','DI'])?`
 <div class="sh1">05 · Plate Package <span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
 
-<div class="sh2">Plate EXR Specifications (incoming)</div>
-<table class="sht" style="max-width:550px">
-  <tbody>
-    <tr><td class="lbl" style="width:42%">Format</td><td>${colExr}</td></tr>
-    <tr><td class="lbl">Color Space</td><td>${colPlate}</td></tr>
-    <tr><td class="lbl">Resolution</td><td>${h(rv('fmt_vfx_res'))}</td></tr>
-    <tr><td class="lbl">Handles</td><td>${hdFrames} frames head &amp; tail</td></tr>
-    <tr><td class="lbl">Source TC</td><td>Embedded in EXR header – timecode as recorded on set</td></tr>
-    <tr><td class="lbl">Source Filename</td><td>Original clip name embedded in EXR metadata – must not be stripped or renamed internally</td></tr>
-    <tr><td class="lbl">Camera Metadata</td><td>Must be fully preserved from original OCF (camera model, lens, ISO, white balance, etc.)</td></tr>
-    <tr><td class="lbl">Pixel Aspect</td><td>Preserved as shot – do not desqueeze plates</td></tr>
-    <tr><td class="lbl">Start Frame</td><td>1001 (= first handle frame). Slate on 1000</td></tr>
-  </tbody>
-</table>
+<p class="note">→ Complete plate EXR specifications (format, color space, resolution, handles, metadata) are documented in <strong>Section 02 · Naming, Color &amp; Format</strong> — EXR Specifications table.</p>
 <p class="note">⚠ Vendors: check incoming shots for correct naming and technical specs immediately upon ingest. Report discrepancies to VFX Production right away.</p>
 ${spMinRes?`<p class="note">⚠ Minimum resolution for VFX work: ${spMinRes}</p>`:''}
-
-${ftInF?`<div class="sh2">Folder Structure</div><p class="sh-p mono" style="background:#f5f5f5;padding:8px 12px;border-radius:4px">${ftInF}</p>`:''}
 
 <div class="sh2">What DI Provides Before First Turnover</div>
 <table class="sht" style="max-width:480px">
@@ -1362,7 +1689,6 @@ ${ftInF?`<div class="sh2">Folder Structure</div><p class="sh-p mono" style="back
     <tr><td class="lbl">Lens Grids</td><td>${tcLens}</td></tr>
     <tr><td class="lbl">CDL Values</td><td>${tcCDL}</td></tr>
     <tr><td class="lbl">Show LUT / CDLs</td><td>${tcLut}</td></tr>
-    <tr><td class="lbl">Grain Plates</td><td>Provided upon request</td></tr>
   </tbody>
 </table>
 
@@ -1373,13 +1699,13 @@ ${showFor(['VND'])?`
 <div class="sh1">06 · Vendor Delivery <span class="aud-badge b-vnd">VND</span></div>
 
 <div class="sh2">Version Zero (required before starting VFX work)</div>
-<p class="sh-p">Each vendor must deliver a <strong>Version Zero</strong> from the main plate only. This must be reviewed and approved by VFX Editorial / Production before actual VFX work begins.</p>
+<p class="sh-p">Each vendor must deliver a <strong>Version Zero</strong> from the main plate only. Version Zero is required for sophisticated shots or any shot where incorrect plate delivery would cause overages. This must be reviewed and approved by VFX Editorial before actual VFX work begins.</p>
 <table class="sht" style="max-width:600px">
   <thead><tr><th>Deliverable</th><th>Spec</th></tr></thead>
   <tbody>
     <tr><td class="lbl">H264 / MP4 Preview</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS}</td></tr>
-    <tr><td class="lbl">DNxHD MXF (Editorial)</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes}</td></tr>
-    <tr><td class="lbl">EXR</td><td>Main plate with retimes &amp; repos applied · no handles</td></tr>
+    <tr><td class="lbl">DNxHD MXF (Editorial)</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
+    <tr><td class="lbl">EXR</td><td>Main plate with retimes applied · no handles</td></tr>
   </tbody>
 </table>
 
@@ -1389,7 +1715,7 @@ ${showFor(['VND'])?`
   <tbody>
     <tr><td class="lbl">Preview</td><td>MP4 / MOV</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS} · blanked to ${aspect}</td></tr>
     <tr><td class="lbl">Mini Cuts</td><td>MP4 / MOV</td><td>At least one shot before and after reviewed range – on request</td></tr>
-    <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes}</td></tr>
+    <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
     <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · no handles${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
     <tr><td class="lbl">Alpha / Mattes</td><td colspan="2">${vdAlpha} – required for: screen inserts, sky replacements, bg inserts, set extensions, full CG</td></tr>
     <tr><td class="lbl">Submission Sheet</td><td>.csv</td><td>Shot Name · Version Name · Scope of Work · Vendor · Submitting For · Notes</td></tr>
@@ -1400,14 +1726,26 @@ ${ftOutF?`<div class="sh2">Upload Folder Structure</div><p class="sh-p mono" sty
 ${ftEditorialF?`<div class="sh2">Editorial Upload Path <span class="aud-badge b-ed">ED</span></div><p class="sh-p mono" style="background:#f0f7ff;padding:8px 12px;border-radius:4px">${ftEditorialF}</p>`:''}
 ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</span></div><p class="sh-p mono" style="background:#fff5f0;padding:8px 12px;border-radius:4px">${ftDiF}</p>`:''}
 
+<div class="sh2">Delivery Folder Naming Convention</div>
+<p class="sh-p">Each delivery folder must follow this format: <span class="mono">${delFmt}</span> — sequential per vendor per day.</p>
+<table class="sht" style="max-width:480px">
+  <tbody>
+    <tr><td class="lbl" style="width:38%">Format</td><td class="mono">${delFmt}</td></tr>
+    <tr><td class="lbl">Examples</td><td class="mono">${delFmtEx1} · ${delFmtEx2} · ${delFmtEx3}</td></tr>
+    <tr><td class="lbl">Counter</td><td>3-digit, sequential per vendor per day – reset daily</td></tr>
+  </tbody>
+</table>
+<p class="note">After each EXR upload: open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> — it must match the actual upload folder name exactly.</p>
+
 <div class="sh2">General Vendor Rules</div>
 <div class="steps">
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">Blanking to <strong>${aspect}</strong> in previews and DNxHD. <strong>Never</strong> blanked in EXRs</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">No VFX work in overscan areas unless explicitly requested by VFX Production</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Blanking to <strong>${aspect}</strong> in previews on Flow${vdDnxCS.toLowerCase().includes('blanked')&&!vdDnxCS.toLowerCase().includes('no blanking')?' and DNxHD':''}. DNxHD: ${vdDnxCS.includes(',')?vdDnxCS.split(',').pop().trim():vdDnxCS}. <strong>Never</strong> blanked in EXRs</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Avoid VFX work in overscan areas. If the work naturally extends into overscan and presents itself in a simple, straightforward way, it is acceptable without explicit request – otherwise contact VFX Production first</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Never bake CDL or LUT values into Final EXRs</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Provide ETAs per shot within first week after delivery</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version – must match the upload folder name exactly (e.g. <span class="mono">${code}_${epEx}${seqEx}001_010_comp_AS_${vex}</span>)</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version. The version name in ${ftTracking||rvPlat} must always match the delivered EXR's version number</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> (e.g. <span class="mono">${delFmtEx1}</span>) — must match the actual upload folder name exactly</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">The delivery folder name must match the delivery playlist name in ${ftTracking||rvPlat}</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Only the last approved version needs to be rendered as EXR and submitted to DI</div></div>
   ${secLabel?`<div class="step"><div class="step-num">⚠</div><div class="step-txt"><strong>${secLabel}</strong></div></div>`:''}
   ${spMinRes?`<div class="step"><div class="step-num">⚠</div><div class="step-txt">Minimum resolution for VFX work: ${spMinRes} – contact VFX Production if below</div></div>`:''}
@@ -1419,15 +1757,16 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
     <tr><td class="lbl" style="width:38%">Slate Frame</td><td>Frame 1000 · 1 frame before handles · same resolution as subsequent frames</td></tr>
     <tr><td class="lbl">Required Slate Fields</td><td>Vendor · Show Name · VFX Scope of Work · Shot &amp; Version · Delivery Date · Submission Notes · Submitted For · Thumbnail (mid-frame with CDL/LUT applied)</td></tr>
     <tr><td class="lbl">Burn-in Style (finals)</td><td>White · 50% opacity · placed in overscan / blanking area outside active picture</td></tr>
-    <tr><td class="lbl">Burn-in Fields</td><td>TAPE ID · Source TC · Clip Name (= plate name) · Master TC · VFX Scope of Work</td></tr>
+    <tr><td class="lbl">Burn-in Fields</td><td>${burnIns.length?burnIns.join(' · '):'Source TC · Clip Name · Master TC · VFX Scope of Work'}</td></tr>
   </tbody>
 </table>
+${n07?`<div class="doc-sec-notes"><strong>Project Notes – Vendor Delivery:</strong> ${n07}</div>`:''}
 
 `:''}
 
 <!-- 07 REVIEW -->
-${showFor(['VND','DI'])?`
-<div class="sh1">07 · Review Process <span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
+${showFor(['ED','VND','DI'])?`
+<div class="sh1">07 · Review Process <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
 
 <div class="sh2">Platform: ${rvPlat}</div>
 <div class="steps">
@@ -1436,10 +1775,10 @@ ${showFor(['VND','DI'])?`
   <div class="step"><div class="step-num">3</div><div class="step-txt">WestFX collects versions, filters feedback, prepares approval playlists for directors and production</div></div>
   <div class="step"><div class="step-num">4</div><div class="step-txt">VFX Editorial cuts in DNxHD and checks frame range, retimes, repos, and scope match against editorial reference</div></div>
   <div class="step"><div class="step-num">5</div><div class="step-txt">${vdExrWhen==='every_version'
-    ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version.`
-    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version.`
+    ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
+    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
   }</div></div>
-  <div class="step"><div class="step-num">6</div><div class="step-txt">VFX Production signs off when a positive QC pass has been confirmed by Post Supervisor and all studio deliverables are complete</div></div>
+  <div class="step"><div class="step-num">6</div><div class="step-txt">VFX Production signs off when a positive QC pass has been confirmed and all studio deliverables are complete</div></div>
 </div>
 
 <div class="sh2">Status Overview</div>
@@ -1453,7 +1792,7 @@ ${showFor(['VND','DI'])?`
     <tr><td class="lbl">Pending Revision</td><td>Vendor waiting for feedback</td></tr>
     <tr><td class="lbl">Proposed as Final</td><td>WestFX proposes shot as creative final – minor tech fixes outstanding</td></tr>
     <tr><td class="lbl">Director Approved</td><td>Creative approval granted → Final EXR delivery can proceed</td></tr>
-    <tr><td class="lbl">Final Approved</td><td>QC, DI and grading passed – shot complete</td></tr>
+    <tr><td class="lbl">Final Approved</td><td>QC, DI and grading passed – shot complete (on some shows only)</td></tr>
   </tbody>
 </table>
 <p class="note">Only vendors set "Pending Review". All other statuses are managed by WestFX Production.</p>
@@ -1578,6 +1917,8 @@ function collectSheetData(){
     'Version Number Padding'                   : rv('nm_ver'),
     'Frame Number Padding'                     : gv('nm_frame'),
     'Shot Number Increments'                   : gv('nm_steps'),
+    'Naming Mode'                              : gv('nm_mode'),
+    'Shot Number Padding'                      : gv('nm_shot_pad'),
     'Sequence Level in Shot Name'              : gv('nm_seq'),
     'Sequence Code Example'                    : gv('nm_seq_code'),
     'Plate Idents JSON'                        : JSON.stringify(idents),
@@ -1590,6 +1931,10 @@ function collectSheetData(){
     'First Frame in Cut (FFOA)'                : ffoa,
     'Final EXR Deliveries'                     : gv('hd_final'),
     'After Picture Lock'                       : gv('hd_apl'),
+    'Plate Diagram Scan Head'                  : gv('pd_scan_head'),
+    'Plate Diagram VFX Handles'                : gv('pd_vfx_handles'),
+    'Plate Diagram Cut Range'                  : gv('pd_cut_range'),
+    'Plate Diagram Scan Tail'                  : gv('pd_scan_tail'),
     // ── FILE TRANSFER ────────────────────────────────────────────────────────
     'Transfer Platform (DI → Vendor)'          : rv('ft_in'),
     'Transfer Platform (Vendor → DI)'          : rv('ft_out'),
@@ -1603,6 +1948,14 @@ function collectSheetData(){
     'VFX Tracking Tool'                        : rv('ft_tracking'),
     'Avid Subclip Workflow'                    : gv('ft_avid'),
     'Count Sheets Format'                      : rv('ft_counts'),
+    'Burn-in Master TC'                        : document.getElementById('bi_master_tc')?.checked?'Yes':'No',
+    'Burn-in Source File Name'                 : document.getElementById('bi_src_name')?.checked?'Yes':'No',
+    'Burn-in Source TC'                        : document.getElementById('bi_src_tc')?.checked?'Yes':'No',
+    'Burn-in VFX Shot Name'                    : document.getElementById('bi_shot_name')?.checked?'Yes':'No',
+    'Burn-in Scope'                            : document.getElementById('bi_scope')?.checked?'Yes':'No',
+    'Burn-in Tape ID'                          : document.getElementById('bi_tape_id')?.checked?'Yes':'No',
+    'Burn-in Vendor Name'                      : document.getElementById('bi_vendor')?.checked?'Yes':'No',
+    'Burn-in Custom'                           : gv('bi_custom'),
     // ── VENDOR DELIVERY ──────────────────────────────────────────────────────
     'Preview Codec'                            : gv('vd_h2_c'),
     'Preview Resolution'                       : gv('vd_h2_r'),
@@ -1610,7 +1963,9 @@ function collectSheetData(){
     'DNxHD Codec'                              : rv('vd_dnx'),
     'DNxHD Container'                          : gv('vd_dnx_cont'),
     'DNxHD Resolution'                         : gv('vd_dnx_res'),
+    'DNxHD Color Space'                        : gv('vd_dnx_cs'),
     'EXR Delivery Timing'                      : gv('vd_exr_when'),
+    'Delivery Folder Format'                   : gv('vd_del_fmt'),
     'EXR Output Color Space'                   : rv('vd_exr_cs'),
     'EXR Output Resolution'                    : gv('vd_exr_res'),
     'Alpha / Mattes Delivery'                  : rv('vd_alpha'),
@@ -1621,7 +1976,15 @@ function collectSheetData(){
     'Minimum VFX Resolution'                   : gv('sp_minres'),
     'Techspecs on Server'                      : gv('sp_server_link'),
     'HD Delivery Note'                         : gv('sp_hd'),
-    'Additional Notes'                         : gv('sp_notes')
+    'Additional Notes'                         : gv('sp_notes'),
+    // ── SECTION NOTES ────────────────────────────────────────────────
+    'Notes Section 01'                         : gv('notes_01'),
+    'Notes Section 02'                         : gv('notes_02'),
+    'Notes Section 03'                         : gv('notes_03'),
+    'Notes Section 04'                         : gv('notes_04'),
+    'Notes Section 05'                         : gv('notes_05'),
+    'Notes Section 06'                         : gv('notes_06'),
+    'Notes Section 07'                         : gv('notes_07')
   };
 }
 
@@ -1777,7 +2140,7 @@ function populateFromSheet(d){
 
   // ── Project Info ────────────────────────────────────────────────────────────
   s('proj_title',     d['Projektname']);
-  s('proj_code',      d['Show Code']);
+  s('proj_code',      d['Show Code']); if(!d['Delivery Folder Format']) updateDelFmtDefault();
   s('proj_type',      d['Project Type']);
   s('proj_client',    d['Client / Broadcaster']);
   s('proj_production',d['Production Company']);
@@ -1830,9 +2193,11 @@ function populateFromSheet(d){
   s('tc_cdl',       d['CDL values available']);
   s('tc_lut',       d['Show / Seq / Shot LUT']);
   // ── Naming ──────────────────────────────────────────────────────────────────
-  s('nm_ver',   d['Version Number Padding']);
-  s('nm_frame', d['Frame Number Padding']);
-  s('nm_steps', d['Shot Number Increments']);
+  s('nm_mode',     d['Naming Mode']);
+  s('nm_shot_pad', d['Shot Number Padding']);
+  s('nm_ver',      d['Version Number Padding']);
+  s('nm_frame',    d['Frame Number Padding']);
+  s('nm_steps',    d['Shot Number Increments']);
   s('nm_seq',      d['Sequence Level in Shot Name']);
   s('nm_seq_code', d['Sequence Code Example']);
   // ── Handles ─────────────────────────────────────────────────────────────────
@@ -1842,6 +2207,10 @@ function populateFromSheet(d){
   s('hd_start', d['Start Frame']);
   s('hd_final', d['Final EXR Deliveries']);
   s('hd_apl',   d['After Picture Lock']);
+  s('pd_scan_head',   d['Plate Diagram Scan Head']);
+  s('pd_vfx_handles', d['Plate Diagram VFX Handles']);
+  s('pd_cut_range',   d['Plate Diagram Cut Range']);
+  s('pd_scan_tail',   d['Plate Diagram Scan Tail']);
   // FFOA is derived – not restored
   // ── File Transfer ────────────────────────────────────────────────────────────
   s('ft_in',               d['Transfer Platform (DI → Vendor)']);
@@ -1856,6 +2225,17 @@ function populateFromSheet(d){
   s('ft_tracking',         d['VFX Tracking Tool']);
   s('ft_avid',             d['Avid Subclip Workflow']);
   s('ft_counts',           d['Count Sheets Format']);
+  // ── Burn-ins
+  const biMap = {
+    'bi_master_tc': 'Burn-in Master TC', 'bi_src_name': 'Burn-in Source File Name',
+    'bi_src_tc': 'Burn-in Source TC', 'bi_shot_name': 'Burn-in VFX Shot Name',
+    'bi_scope': 'Burn-in Scope', 'bi_tape_id': 'Burn-in Tape ID', 'bi_vendor': 'Burn-in Vendor Name'
+  };
+  Object.entries(biMap).forEach(([id, key])=>{
+    const el = document.getElementById(id);
+    if(el && d[key] !== undefined){ el.checked = d[key]==='Yes'; el.closest('.bi-check').classList.toggle('active', el.checked); loaded++; }
+  });
+  s('bi_custom', d['Burn-in Custom']);
   // ── Vendor Delivery ──────────────────────────────────────────────────────────
   s('vd_h2_c',    d['Preview Codec']);
   s('vd_h2_r',    d['Preview Resolution']);
@@ -1863,7 +2243,9 @@ function populateFromSheet(d){
   s('vd_dnx',     d['DNxHD Codec']);
   s('vd_dnx_cont',d['DNxHD Container']);
   s('vd_dnx_res', d['DNxHD Resolution']);
+  s('vd_dnx_cs',  d['DNxHD Color Space']);
   s('vd_exr_when',d['EXR Delivery Timing']);
+  s('vd_del_fmt', d['Delivery Folder Format']);
   s('vd_exr_cs',  d['EXR Output Color Space']);
   s('vd_exr_res', d['EXR Output Resolution']);
   s('vd_alpha',   d['Alpha / Mattes Delivery']);
@@ -1875,6 +2257,11 @@ function populateFromSheet(d){
   s('sp_server_link', d['Techspecs on Server']);
   s('sp_hd',          d['HD Delivery Note']);
   s('sp_notes',       d['Additional Notes']);
+  // ── Section Notes
+  s('notes_01', d['Notes Section 01']); s('notes_02', d['Notes Section 02']);
+  s('notes_03', d['Notes Section 03']); s('notes_04', d['Notes Section 04']);
+  s('notes_05', d['Notes Section 05']); s('notes_06', d['Notes Section 06']);
+  s('notes_07', d['Notes Section 07']);
 
   // ── JSON TABLES ─────────────────────────────────────────────────────────────
   // Vendors
@@ -1925,7 +2312,7 @@ function populateFromSheet(d){
   window._loadedProject      = d['Projektname']    || '';
 
   // Open all sections & trigger toggles
-  toggleFeature(); toggleCH(); toggleSeqCode();
+  toggleFeature(); toggleCH(); toggleSeqCode(); toggleNamingMode();
   document.querySelectorAll('.sec-hdr:not(.open)').forEach(h=>h.click());
 
   const banner=document.getElementById('load-banner');
@@ -1938,6 +2325,12 @@ function populateFromSheet(d){
 document.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('doc_date').value=new Date().toISOString().split('T')[0];
   addVendor(); // start with one vendor block
+  // Burn-in checkbox active styling
+  document.querySelectorAll('.bi-check input[type=checkbox]').forEach(cb=>{
+    cb.addEventListener('change',()=>{
+      cb.closest('.bi-check').classList.toggle('active', cb.checked);
+    });
+  });
 });
 </script>
 </body>

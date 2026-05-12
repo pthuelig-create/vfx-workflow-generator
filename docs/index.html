@@ -256,7 +256,7 @@ input,select,textarea{font-family:inherit;font-size:12px}
       </div>
       <div class="field var">
         <label>Show Code <span class="hint">3–4 chars, used in all filenames</span></label>
-        <input type="text" id="proj_code" placeholder="e.g. CRI, HLG, TIG, SEL" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+        <input type="text" id="proj_code" placeholder="e.g. CRI, HLG, TIG, SEL" maxlength="6" oninput="this.value=this.value.toUpperCase(); updateDelFmtDefault()">
       </div>
       <div class="field var">
         <label>Project Type</label>
@@ -855,6 +855,11 @@ input,select,textarea{font-family:inherit;font-size:12px}
         </select>
       </div>
       <div class="field var">
+        <label>Delivery Folder Naming Format <span class="hint">Standard – editierbar</span></label>
+        <input type="text" id="vd_del_fmt" placeholder="e.g. [ProjectCode]_[VendorCode]_[YYMMDD]_[NNN]">
+        <div style="font-size:11px;color:#888;margin-top:4px">Platzhalter werden im Dokument erklärt. Standard wird automatisch mit Show Code befüllt.</div>
+      </div>
+      <div class="field var">
         <label>EXR Output Color Space</label>
         <select id="vd_exr_cs" onchange="chkOther(this)">
           <option>ACES AP0 Linear (standard)</option>
@@ -969,6 +974,22 @@ function tog(hdr){
   hdr.classList.toggle('open');
   hdr.nextElementSibling.classList.toggle('open');
 }
+
+// ── DELIVERY FOLDER FORMAT DEFAULT ──────────────────────────────────────────
+function updateDelFmtDefault(){
+  const fld = document.getElementById('vd_del_fmt');
+  if(!fld) return;
+  const code = (document.getElementById('proj_code')?.value||'').trim().toUpperCase();
+  // Only auto-fill if the field is still empty or was previously auto-filled (not manually edited)
+  if(!fld.dataset.userEdited){
+    fld.value = code ? `${code}_[VendorCode]_[YYMMDD]_[NNN]` : '[ProjectCode]_[VendorCode]_[YYMMDD]_[NNN]';
+  }
+}
+// Mark as user-edited when manually changed
+document.addEventListener('DOMContentLoaded',function(){
+  const fld=document.getElementById('vd_del_fmt');
+  if(fld) fld.addEventListener('input',function(){ this.dataset.userEdited='1'; });
+});
 
 // ── OTHER DROPDOWN ───────────────────────────────────────────────────────────
 function chkOther(sel){
@@ -1354,6 +1375,15 @@ function generate(aud){
   const vdExrCS=h(rv('vd_exr_cs')),vdExrRes=h(gv('vd_exr_res'));
   const vdExrWhen=gv('vd_exr_when')||'finals_only';
   const vdAlpha=h(rv('vd_alpha'));
+  // Delivery folder naming: use custom input or build default from show code
+  const _delFmtRaw = gv('vd_del_fmt').trim();
+  const delFmt = h(_delFmtRaw || (code!=='PROJ' ? `${code}_[VendorCode]_[YYMMDD]_[NNN]` : '[ProjectCode]_[VendorCode]_[YYMMDD]_[NNN]'));
+  const delFmtEx1 = _delFmtRaw ? _delFmtRaw.replace('[ProjectCode]',code).replace('[VendorCode]','NW').replace('[YYMMDD]','260327').replace('[NNN]','001')
+                                : (code!=='PROJ' ? `${code}_NW_260327_001` : 'CRI_NW_260327_001');
+  const delFmtEx2 = _delFmtRaw ? _delFmtRaw.replace('[ProjectCode]',code).replace('[VendorCode]','NW').replace('[YYMMDD]','260327').replace('[NNN]','002')
+                                : (code!=='PROJ' ? `${code}_NW_260327_002` : 'CRI_NW_260327_002');
+  const delFmtEx3 = _delFmtRaw ? _delFmtRaw.replace('[ProjectCode]',code).replace('[VendorCode]','AS').replace('[YYMMDD]','260327').replace('[NNN]','001')
+                                : (code!=='PROJ' ? `${code}_AS_260327_001` : 'CRI_AS_260327_001');
   const rvPlat=h(rv('rv_plat')),rvRecip=h(gv('rv_recip'));
 
   const spSec=rv('sp_sec'),spMinRes=h(gv('sp_minres'));
@@ -1697,15 +1727,15 @@ ${ftEditorialF?`<div class="sh2">Editorial Upload Path <span class="aud-badge b-
 ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</span></div><p class="sh-p mono" style="background:#fff5f0;padding:8px 12px;border-radius:4px">${ftDiF}</p>`:''}
 
 <div class="sh2">Delivery Folder Naming Convention</div>
-<p class="sh-p">Each delivery folder must follow this format: <span class="mono">[VendorCode]_[YYMMDD]_[NNN]</span> — sequential per vendor per day.</p>
-<table class="sht" style="max-width:420px">
+<p class="sh-p">Each delivery folder must follow this format: <span class="mono">${delFmt}</span> — sequential per vendor per day.</p>
+<table class="sht" style="max-width:480px">
   <tbody>
-    <tr><td class="lbl" style="width:38%">Format</td><td class="mono">[VendorCode]_[YYMMDD]_[NNN]</td></tr>
-    <tr><td class="lbl">Examples</td><td class="mono">NW_260327_001 · NW_260327_002 · AS_260327_001</td></tr>
+    <tr><td class="lbl" style="width:38%">Format</td><td class="mono">${delFmt}</td></tr>
+    <tr><td class="lbl">Examples</td><td class="mono">${delFmtEx1} · ${delFmtEx2} · ${delFmtEx3}</td></tr>
     <tr><td class="lbl">Counter</td><td>3-digit, sequential per vendor per day – reset daily</td></tr>
   </tbody>
 </table>
-<p class="note">Enter the delivery folder name in ${ftTracking||rvPlat} on the corresponding version (field: "EXR Delivery") — it must match the actual upload folder name exactly.</p>
+<p class="note">After each EXR upload: open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> — it must match the actual upload folder name exactly.</p>
 
 <div class="sh2">General Vendor Rules</div>
 <div class="steps">
@@ -1714,7 +1744,7 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Never bake CDL or LUT values into Final EXRs</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Provide ETAs per shot within first week after delivery</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version. The version name in ${ftTracking||rvPlat} must always match the delivered EXR's version number</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version – must match the upload folder name exactly (e.g. <span class="mono">${code}_${epEx}${seqEx}001_${shotEx}_comp_AS_${vex}</span>)</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> (e.g. <span class="mono">${delFmtEx1}</span>) — must match the actual upload folder name exactly</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">The delivery folder name must match the delivery playlist name in ${ftTracking||rvPlat}</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Only the last approved version needs to be rendered as EXR and submitted to DI</div></div>
   ${secLabel?`<div class="step"><div class="step-num">⚠</div><div class="step-txt"><strong>${secLabel}</strong></div></div>`:''}
@@ -1745,8 +1775,8 @@ ${showFor(['ED','VND','DI'])?`
   <div class="step"><div class="step-num">3</div><div class="step-txt">WestFX collects versions, filters feedback, prepares approval playlists for directors and production</div></div>
   <div class="step"><div class="step-num">4</div><div class="step-txt">VFX Editorial cuts in DNxHD and checks frame range, retimes, repos, and scope match against editorial reference</div></div>
   <div class="step"><div class="step-num">5</div><div class="step-txt">${vdExrWhen==='every_version'
-    ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version.`
-    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, enter the <strong>Delivery Folder Name</strong> in ${ftTracking||rvPlat} on the corresponding version, in the field "EXR Delivery".`
+    ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
+    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
   }</div></div>
   <div class="step"><div class="step-num">6</div><div class="step-txt">VFX Production signs off when a positive QC pass has been confirmed and all studio deliverables are complete</div></div>
 </div>
@@ -1935,6 +1965,7 @@ function collectSheetData(){
     'DNxHD Resolution'                         : gv('vd_dnx_res'),
     'DNxHD Color Space'                        : gv('vd_dnx_cs'),
     'EXR Delivery Timing'                      : gv('vd_exr_when'),
+    'Delivery Folder Format'                   : gv('vd_del_fmt'),
     'EXR Output Color Space'                   : rv('vd_exr_cs'),
     'EXR Output Resolution'                    : gv('vd_exr_res'),
     'Alpha / Mattes Delivery'                  : rv('vd_alpha'),
@@ -2109,7 +2140,7 @@ function populateFromSheet(d){
 
   // ── Project Info ────────────────────────────────────────────────────────────
   s('proj_title',     d['Projektname']);
-  s('proj_code',      d['Show Code']);
+  s('proj_code',      d['Show Code']); if(!d['Delivery Folder Format']) updateDelFmtDefault();
   s('proj_type',      d['Project Type']);
   s('proj_client',    d['Client / Broadcaster']);
   s('proj_production',d['Production Company']);
@@ -2214,6 +2245,7 @@ function populateFromSheet(d){
   s('vd_dnx_res', d['DNxHD Resolution']);
   s('vd_dnx_cs',  d['DNxHD Color Space']);
   s('vd_exr_when',d['EXR Delivery Timing']);
+  s('vd_del_fmt', d['Delivery Folder Format']);
   s('vd_exr_cs',  d['EXR Output Color Space']);
   s('vd_exr_res', d['EXR Output Resolution']);
   s('vd_alpha',   d['Alpha / Mattes Delivery']);
