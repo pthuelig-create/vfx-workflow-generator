@@ -763,7 +763,7 @@ input,select,textarea{font-family:inherit;font-size:12px}
         <input class="other-inp" id="ft_platesrc_other" placeholder="Specify…">
       </div>
       <div class="field var">
-        <label>VFX Tracking / Breakdown Tool</label>
+        <label>VFX Breakdown / Shot Tracking Tool <span class="hint">nur für Breakdown-Sheet — Review-Plattform separat in 07</span></label>
         <select id="ft_tracking" onchange="chkOther(this)">
           <option>Flow Production Tracking</option>
           <option>Ninox</option>
@@ -1735,7 +1735,7 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
     <tr><td class="lbl">Counter</td><td>3-digit, sequential per vendor per day – reset daily</td></tr>
   </tbody>
 </table>
-<p class="note">After each EXR upload: open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> — it must match the actual upload folder name exactly.</p>
+<p class="note">After each EXR upload: open the corresponding version in ${rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> — it must match the actual upload folder name exactly.</p>
 
 <div class="sh2">General Vendor Rules</div>
 <div class="steps">
@@ -1743,9 +1743,9 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Avoid VFX work in overscan areas. If the work naturally extends into overscan and presents itself in a simple, straightforward way, it is acceptable without explicit request – otherwise contact VFX Production first</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Never bake CDL or LUT values into Final EXRs</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Provide ETAs per shot within first week after delivery</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version. The version name in ${ftTracking||rvPlat} must always match the delivered EXR's version number</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> (e.g. <span class="mono">${delFmtEx1}</span>) — must match the actual upload folder name exactly</div></div>
-  <div class="step"><div class="step-num">✓</div><div class="step-txt">The delivery folder name must match the delivery playlist name in ${ftTracking||rvPlat}</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">Version numbers must be unique and never reused. QT and EXR always share the same version. The version name in ${rvPlat} must always match the delivered EXR's version number</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">After each EXR upload: open the corresponding version in ${rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong> (e.g. <span class="mono">${delFmtEx1}</span>) — must match the actual upload folder name exactly</div></div>
+  <div class="step"><div class="step-num">✓</div><div class="step-txt">The delivery folder name must match the delivery playlist name in ${rvPlat}</div></div>
   <div class="step"><div class="step-num">✓</div><div class="step-txt">Only the last approved version needs to be rendered as EXR and submitted to DI</div></div>
   ${secLabel?`<div class="step"><div class="step-num">⚠</div><div class="step-txt"><strong>${secLabel}</strong></div></div>`:''}
   ${spMinRes?`<div class="step"><div class="step-num">⚠</div><div class="step-txt">Minimum resolution for VFX work: ${spMinRes} – contact VFX Production if below</div></div>`:''}
@@ -1775,8 +1775,8 @@ ${showFor(['ED','VND','DI'])?`
   <div class="step"><div class="step-num">3</div><div class="step-txt">WestFX collects versions, filters feedback, prepares approval playlists for directors and production</div></div>
   <div class="step"><div class="step-num">4</div><div class="step-txt">VFX Editorial cuts in DNxHD and checks frame range, retimes, repos, and scope match against editorial reference</div></div>
   <div class="step"><div class="step-num">5</div><div class="step-txt">${vdExrWhen==='every_version'
-    ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
-    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${ftTracking||rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, open the corresponding version in ${ftTracking||rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
+    ? `EXR is delivered with <strong>every version submission</strong> – alongside the H264 and DNxHD. After each EXR upload, open the corresponding version in ${rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
+    : `Final EXRs are only to be delivered once shot status is set to <strong>Proposed as Final</strong> or <strong>Director Approved</strong> in ${rvPlat}. Vendors monitor the status directly – no separate notification from WestFX. After uploading, open the corresponding version in ${rvPlat} and enter the delivery folder name in the field <strong>"EXR Delivery"</strong>.`
   }</div></div>
   <div class="step"><div class="step-num">6</div><div class="step-txt">VFX Production signs off when a positive QC pass has been confirmed and all studio deliverables are complete</div></div>
 </div>
