@@ -199,11 +199,12 @@ input,select,textarea{font-family:inherit;font-size:12px}
 
 /* ── PRINT ─────────────────────────────────────────────────────────────────── */
 @media print{
+  @page{margin-top:0;margin-bottom:0}
   #form-view,.prev-ctrl,.gen-bar,#load-banner{display:none!important}
   #preview-view{display:block!important}
   #sheet{padding:0;max-width:100%}
   .cv{padding:20px 0}
-  body{background:#fff;font-size:10.5px;orphans:3;widows:3}
+  body{background:#fff;font-size:10.5px;orphans:3;widows:3;padding-top:12mm;padding-bottom:12mm}
   .sh1{-webkit-print-color-adjust:exact;print-color-adjust:exact;page-break-after:avoid;break-after:avoid}
   .sh2{page-break-after:avoid;break-after:avoid}
   .sht{page-break-inside:avoid;break-inside:avoid}
