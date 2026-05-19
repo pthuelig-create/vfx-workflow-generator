@@ -827,6 +827,17 @@ input,select,textarea{font-family:inherit;font-size:12px}
       <div class="field std"><label>Resolution</label><input type="text" id="vd_h2_r" value="UHD 3840×2160"></div>
       <div class="field std"><label>Color Space</label><input type="text" id="vd_h2_cs" value="Rec.709 + Show LUT baked in, blanked to aspect ratio"></div>
     </div>
+    <div class="sub-hdr">Preview Burn-Ins <span style="font-weight:400;font-size:10px;color:#999">(Pflichtfelder im Burn-In jedes Preview-Shots beim Vendor)</span></div>
+    <div class="info-box">Definiere, welche Informationen als Burn-In auf den H264/MP4 Preview-Deliveries der Vendors pro Shot enthalten sein müssen.</div>
+    <div class="bi-grid" id="vnd-burnins-grid">
+      <label class="bi-check active"><input type="checkbox" id="vbi_vendor_name" checked> Vendor Name</label>
+      <label class="bi-check active"><input type="checkbox" id="vbi_version_name" checked> Version Name</label>
+      <label class="bi-check active"><input type="checkbox" id="vbi_frame_count" checked> Frame Count</label>
+      <label class="bi-check active"><input type="checkbox" id="vbi_date" checked> Date</label>
+      <label class="bi-check"><input type="checkbox" id="vbi_vfx_req"> VFX Requirement</label>
+      <label class="bi-check"><input type="checkbox" id="vbi_master_tc"> Master TC</label>
+      <label class="bi-check"><input type="checkbox" id="vbi_source_tc"> Source TC</label>
+    </div>
 
     <div class="sub-hdr">Editorial (DNxHD MXF)</div>
     <div class="fg g3">
@@ -1136,6 +1147,25 @@ function getBurnIns(){
   return items;
 }
 
+// ── VENDOR PREVIEW BURN-IN COLLECTOR ─────────────────────────────────────────
+function getVndBurnIns(){
+  const items = [];
+  const checks = [
+    ['vbi_vendor_name',  'Vendor Name'],
+    ['vbi_version_name', 'Version Name'],
+    ['vbi_frame_count',  'Frame Count'],
+    ['vbi_date',         'Date'],
+    ['vbi_vfx_req',      'VFX Requirement'],
+    ['vbi_master_tc',    'Master TC'],
+    ['vbi_source_tc',    'Source TC']
+  ];
+  checks.forEach(([id, label])=>{
+    const el = document.getElementById(id);
+    if(el && el.checked) items.push(label);
+  });
+  return items;
+}
+
 // ── PLATE PULL DIAGRAM BUILDER ────────────────────────────────────────────────
 function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
   if(!scanHead && !cutRange && !scanTail) return ''; // skip if no data
@@ -1356,6 +1386,7 @@ function generate(aud){
 
   // Burn-ins & plate pull (after hdStd is available)
   const burnIns=getBurnIns();
+  const vndBurnIns=getVndBurnIns();
   const pdScanHead=gv('pd_scan_head'),pdVfxH=gv('pd_vfx_handles'),pdCutRange=gv('pd_cut_range'),pdScanTail=gv('pd_scan_tail');
   const vfxHandleForDiagram=pdVfxH||(hdStd==='__other__'?'10':hdStd);
   const plateDiagram=buildPlatePullDiagram(pdScanHead,vfxHandleForDiagram,pdCutRange,pdScanTail);
@@ -1716,6 +1747,7 @@ ${showFor(['VND'])?`
   <thead><tr><th>Deliverable</th><th>Format</th><th>Specification</th></tr></thead>
   <tbody>
     <tr><td class="lbl">Preview</td><td>MP4 / MOV</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS} · blanked to ${aspect}</td></tr>
+    ${vndBurnIns.length?`<tr><td class="lbl">Preview Burn-Ins</td><td colspan="2">${vndBurnIns.join(' · ')}</td></tr>`:''}
     <tr><td class="lbl">Mini Cuts</td><td>MP4 / MOV</td><td>At least one shot before and after reviewed range – on request</td></tr>
     <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
     <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · no handles${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
@@ -1965,6 +1997,13 @@ function collectSheetData(){
     'Burn-in Tape ID'                          : document.getElementById('bi_tape_id')?.checked?'Yes':'No',
     'Burn-in Vendor Name'                      : document.getElementById('bi_vendor')?.checked?'Yes':'No',
     'Burn-in Custom'                           : gv('bi_custom'),
+    'Preview Burn-in Vendor Name'              : document.getElementById('vbi_vendor_name')?.checked?'Yes':'No',
+    'Preview Burn-in Version Name'             : document.getElementById('vbi_version_name')?.checked?'Yes':'No',
+    'Preview Burn-in Frame Count'              : document.getElementById('vbi_frame_count')?.checked?'Yes':'No',
+    'Preview Burn-in Date'                     : document.getElementById('vbi_date')?.checked?'Yes':'No',
+    'Preview Burn-in VFX Requirement'          : document.getElementById('vbi_vfx_req')?.checked?'Yes':'No',
+    'Preview Burn-in Master TC'                : document.getElementById('vbi_master_tc')?.checked?'Yes':'No',
+    'Preview Burn-in Source TC'                : document.getElementById('vbi_source_tc')?.checked?'Yes':'No',
     // ── VENDOR DELIVERY ──────────────────────────────────────────────────────
     'Preview Codec'                            : gv('vd_h2_c'),
     'Preview Resolution'                       : gv('vd_h2_r'),
@@ -2245,6 +2284,20 @@ function populateFromSheet(d){
     if(el && d[key] !== undefined){ el.checked = d[key]==='Yes'; el.closest('.bi-check').classList.toggle('active', el.checked); loaded++; }
   });
   s('bi_custom', d['Burn-in Custom']);
+  // ── Preview Burn-ins (Vendor)
+  const vbiMap = {
+    'vbi_vendor_name':  'Preview Burn-in Vendor Name',
+    'vbi_version_name': 'Preview Burn-in Version Name',
+    'vbi_frame_count':  'Preview Burn-in Frame Count',
+    'vbi_date':         'Preview Burn-in Date',
+    'vbi_vfx_req':      'Preview Burn-in VFX Requirement',
+    'vbi_master_tc':    'Preview Burn-in Master TC',
+    'vbi_source_tc':    'Preview Burn-in Source TC'
+  };
+  Object.entries(vbiMap).forEach(([id, key])=>{
+    const el = document.getElementById(id);
+    if(el && d[key] !== undefined){ el.checked = d[key]==='Yes'; el.closest('.bi-check').classList.toggle('active', el.checked); loaded++; }
+  });
   // ── Vendor Delivery ──────────────────────────────────────────────────────────
   s('vd_h2_c',    d['Preview Codec']);
   s('vd_h2_r',    d['Preview Resolution']);
