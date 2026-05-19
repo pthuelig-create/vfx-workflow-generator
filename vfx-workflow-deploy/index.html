@@ -1792,7 +1792,7 @@ ${ftDiF?`<div class="sh2">DI / EXR Upload Path <span class="aud-badge b-di">DI</
     <tr><td class="lbl" style="width:38%">Slate Frame</td><td>Frame 1000 · 1 frame before handles · same resolution as subsequent frames</td></tr>
     <tr><td class="lbl">Required Slate Fields</td><td>Vendor · Show Name · VFX Scope of Work · Shot &amp; Version · Delivery Date · Submission Notes · Submitted For · Thumbnail (mid-frame with CDL/LUT applied)</td></tr>
     <tr><td class="lbl">Burn-in Style (finals)</td><td>White · 50% opacity · placed in overscan / blanking area outside active picture</td></tr>
-    <tr><td class="lbl">Burn-in Fields</td><td>${burnIns.length?burnIns.join(' · '):'Source TC · Clip Name · Master TC · VFX Scope of Work'}</td></tr>
+    <tr><td class="lbl">Burn-in Fields</td><td>${vndBurnIns.length?vndBurnIns.join(' · '):'Source TC · Clip Name · Master TC · VFX Scope of Work'}</td></tr>
   </tbody>
 </table>
 ${n07?`<div class="doc-sec-notes"><strong>Project Notes – Vendor Delivery:</strong> ${n07}</div>`:''}
