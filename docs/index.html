@@ -1189,16 +1189,17 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
   const cr = parseInt(cutRange)||50;
   const st = parseInt(scanTail)||sh;
 
-  // Frame numbers (absolute, starting from 1001 as VFX handle start)
-  const scanHeadStart = 1001 - vh - sh;
-  const vfxHeadStart  = 1001 - vh;
-  const cutStart      = 1001;
-  const cutEnd        = 1000 + cr;
-  const vfxTailStart  = 1001 + cr;
-  const vfxTailEnd    = 1000 + cr + vh;
-  const scanTailStart = 1001 + cr + vh;
-  const scanTailEnd   = 1000 + cr + vh + st;
-  const slateFrame    = 1000;
+  // Frame numbers (absolute): hd_start = first VFX handle frame, slate = hd_start - 1
+  const hdStart       = parseInt(gv('hd_start')) || 1001;
+  const slateFrame    = hdStart - 1;
+  const scanHeadStart = hdStart - sh;
+  const vfxHeadStart  = hdStart;
+  const cutStart      = hdStart + vh;
+  const cutEnd        = hdStart + vh + cr - 1;
+  const vfxTailStart  = hdStart + vh + cr;
+  const vfxTailEnd    = hdStart + vh + cr + vh - 1;
+  const scanTailStart = hdStart + vh + cr + vh;
+  const scanTailEnd   = hdStart + vh + cr + vh + st - 1;
 
   // Column widths proportional (total parts)
   const total = (sh||0) + vh + cr + vh + (st||0);
@@ -1243,7 +1244,7 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
 
   const ppFrameCellsFixed =
     (sh?`<td class="ppd-scan">${scanHeadStart} … ${scanHeadEnd}</td>`:'') +
-    `<td class="ppd-vfx">${vfxHeadStart} … 1000</td>` +
+    `<td class="ppd-vfx">${vfxHeadStart} … ${vfxHeadStart + vh - 1}</td>` +
     `<td class="ppd-cut">${cutStart} … ${cutEnd}</td>` +
     `<td class="ppd-vfx">${vfxTailStart} … ${vfxTailEnd}</td>` +
     (st?`<td class="ppd-scan">${scanTailStart} … ${scanTailEnd}</td>`:'');
@@ -1263,7 +1264,7 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
 
   const subFrameCells =
     `<td class="ppd-slate">${slateFrame}</td>` +
-    `<td class="ppd-vfx">${vfxHeadStart} … 1000</td>` +
+    `<td class="ppd-vfx">${vfxHeadStart} … ${vfxHeadStart + vh - 1}</td>` +
     `<td class="ppd-cut">${cutStart} … ${cutEnd}</td>` +
     `<td class="ppd-vfx">${vfxTailStart} … ${vfxTailEnd}</td>`;
 
@@ -1288,7 +1289,7 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
     </tbody>
   </table>
 </div>
-<p class="note" style="margin-top:6px">Slate = Frame 1000 (1 frame before VFX handle head). VFX Handles: ${vh} frames. Cut Range: ${cr} frames.${sh?' Scan Handles Head: '+sh+' frames.':''}${st?' Scan Handles Tail: '+st+' frames.':''}</p>`;
+<p class="note" style="margin-top:6px">Slate = Frame ${slateFrame} (1 frame before VFX handle head). VFX Handles: ${vh} frames. Cut Range: ${cr} frames. FFOA: ${cutStart}.${sh?' Scan Handles Head: '+sh+' frames.':''}${st?' Scan Handles Tail: '+st+' frames.':''}</p>`;
 }
 
 // ── DATA COLLECTORS ──────────────────────────────────────────────────────────
