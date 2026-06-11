@@ -506,8 +506,8 @@ input,select,textarea{font-family:inherit;font-size:12px}
         <input class="other-inp" id="col_work_other" placeholder="Specify…">
       </div>
       <div class="field var">
-        <label>EXR Output Color Space (outgoing to DI)</label>
-        <select id="col_out" onchange="chkOther(this)">
+        <label>EXR Output / Render Color Space</label>
+        <select id="col_out" onchange="chkOther(this); syncColOut(this)">
           <option>ACES AP0 Linear</option>
           <option>ACES AP1 / ACEScg 1.2 Linear</option>
           <option>ACEScg</option>
@@ -873,9 +873,10 @@ input,select,textarea{font-family:inherit;font-size:12px}
       </div>
       <div class="field var">
         <label>EXR Output Color Space</label>
-        <select id="vd_exr_cs" onchange="chkOther(this)">
-          <option>ACES AP0 Linear (standard)</option>
+        <select id="vd_exr_cs" data-auto="true" onchange="chkOther(this); this.dataset.auto='false'">
+          <option>ACES AP0 Linear</option>
           <option>ACES AP1 / ACEScg 1.2 Linear</option>
+          <option>ACEScg</option>
           <option value="__other__">Other (specify)</option>
         </select>
         <input class="other-inp" id="vd_exr_cs_other" placeholder="Specify…">
@@ -1002,6 +1003,20 @@ document.addEventListener('DOMContentLoaded',function(){
   const fld=document.getElementById('vd_del_fmt');
   if(fld) fld.addEventListener('input',function(){ this.dataset.userEdited='1'; });
 });
+
+// ── SYNC col_out → vd_exr_cs (solange nicht manuell überschrieben) ───────────
+function syncColOut(sel){
+  const vdCs = document.getElementById('vd_exr_cs');
+  if (!vdCs || vdCs.dataset.auto !== 'true') return;
+  const val = sel.value === '__other__' ? '__other__' : sel.value;
+  for (let i = 0; i < vdCs.options.length; i++){
+    if (vdCs.options[i].value === val || vdCs.options[i].text === val){
+      vdCs.value = val;
+      chkOther(vdCs);
+      return;
+    }
+  }
+}
 
 // ── OTHER DROPDOWN ───────────────────────────────────────────────────────────
 function chkOther(sel){
@@ -2308,7 +2323,7 @@ function populateFromSheet(d){
   s('vd_dnx_cs',  d['DNxHD Color Space']);
   s('vd_exr_when',d['EXR Delivery Timing']);
   s('vd_del_fmt', d['Delivery Folder Format']);
-  s('vd_exr_cs',  d['EXR Output Color Space']);
+  s('vd_exr_cs',  d['EXR Output Color Space']); document.getElementById('vd_exr_cs').dataset.auto='false';
   s('vd_exr_res', d['EXR Output Resolution']);
   s('vd_alpha',   d['Alpha / Mattes Delivery']);
   s('rv_plat',    d['Review Platform']);
