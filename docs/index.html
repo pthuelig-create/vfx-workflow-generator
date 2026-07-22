@@ -1766,7 +1766,7 @@ ${showFor(['VND'])?`
     ${vndBurnIns.length?`<tr><td class="lbl">Preview Burn-Ins</td><td colspan="2">${vndBurnIns.join(' · ')}</td></tr>`:''}
     <tr><td class="lbl">Mini Cuts</td><td>MP4 / MOV</td><td>At least one shot before and after reviewed range – on request</td></tr>
     <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
-    <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · no handles${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
+    <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · ${hdFinal}${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
     <tr><td class="lbl">Alpha / Mattes</td><td colspan="2">${vdAlpha} – required for: screen inserts, sky replacements, bg inserts, set extensions, full CG</td></tr>
     <tr><td class="lbl">Submission Sheet</td><td>.csv</td><td>Shot Name · Version Name · Scope of Work · Vendor · Submitting For · Notes</td></tr>
   </tbody>
