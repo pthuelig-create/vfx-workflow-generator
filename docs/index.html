@@ -579,7 +579,7 @@ input,select,textarea{font-family:inherit;font-size:12px}
       </div>
     </div>
 
-    <div id="nm_info_box" class="info-box">🎬 VFX-Shots werden nach dem Shot-Namensschema gemarkert: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot).</div>
+    <div id="nm_info_box" class="info-box">🎬 VFX shots are marked using the shot naming scheme: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot).</div>
 
     <div id="nm_standard_scene_info" class="info-box" style="margin-top:14px">
       📌 <strong>Scene = Scene number</strong> from the screenplay / script (3 digits, e.g. 001, 042, 115). <strong>Shot</strong> = shot number within that scene, in steps of 10. Version numbers must be unique and never reused. QT and EXR always share the same version number.
@@ -1639,7 +1639,7 @@ ${showFor(['ED','VND','DI'])?`
 <div class="sh1">03 · Naming Convention <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
 
 <div class="sh2">Marker Naming <span class="aud-badge b-ed">ED</span></div>
-<p class="sh-p">${nmSimple?'VFX-Shots werden nach dem Shot-Namensschema gemarkert (Code + Shot):':'VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert:'}</p>
+<p class="sh-p">${nmSimple?'VFX shots are marked using the shot naming scheme (Code + Shot):':'VFX shots are marked in the Avid/Premiere timeline using the shot naming scheme:'}</p>
 <p class="sh-p" style="margin-bottom:6px">${markerNamingViz}</p>
 <p class="sh-p note">Example: <span class="mono">${markerNamingExTxt}</span></p>
 
