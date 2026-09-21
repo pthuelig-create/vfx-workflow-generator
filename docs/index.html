@@ -2090,7 +2090,8 @@ function showSheetStatus(msg, ok){
   el.style.color = '#fff';
   el.style.display = 'block';
   clearTimeout(el._t);
-  el._t = setTimeout(()=>{ el.style.display='none'; }, 4000);
+  // Fehler länger stehen lassen: "Not saved" darf man nicht verpassen.
+  el._t = setTimeout(()=>{ el.style.display='none'; }, ok ? 4000 : 15000);
 }
 
 async function saveToSheets(){
@@ -2141,20 +2142,44 @@ async function saveToSheets(){
   const newTs = new Date().toISOString();
   data['_last_modified'] = newTs;
   showSheetStatus('⏳ Saving to Google Sheets…', true);
+  // ⚠️ Vorher mode:'no-cors' mit Content-Type application/json. Die Antwort
+  //    ist dann "opaque" – nicht lesbar –, und die Seite meldete IMMER
+  //    "✓ Saved", auch bei falschem Token oder Serverfehler.
+  //    Jetzt: normaler CORS-Aufruf OHNE eigenen Content-Type. Ein String als
+  //    body wird als text/plain geschickt, das ist eine "einfache" Anfrage ohne
+  //    Preflight (den Apps Script nicht beantworten könnte). /exec leitet auf
+  //    script.googleusercontent.com um, fetch folgt, und DORT ist die Antwort
+  //    cross-origin lesbar – genau wie bei Load und List oben schon.
+  //    doPost liest den Rumpf über e.postData.contents, der Typ ist ihm egal.
   const url = APPS_SCRIPT_URL + '?token=' + encodeURIComponent(tok);
-  fetch(url, {
-    method  : 'POST',
-    mode    : 'no-cors',           // Google Apps Script requires no-cors for cross-origin POST
-    headers : { 'Content-Type': 'application/json' },
-    body    : JSON.stringify(data)
-  }).then(()=>{
-    // Update our local reference so subsequent saves use the new timestamp
-    window._lastModifiedOnLoad = newTs;
-    window._loadedProject      = data['Projektname'];
-    showSheetStatus('✓ Saved to Google Sheets!', true);
-  }).catch(()=>{
-    showSheetStatus('✗ Could not reach Google Sheets – check URL.', false);
-  });
+  let json;
+  try {
+    const resp = await fetch(url, {
+      method : 'POST',
+      mode   : 'cors',
+      body   : JSON.stringify(data)
+    });
+    json = await resp.json();
+  } catch(e){
+    // Netzwerkfehler ODER keine JSON-Antwort (z.B. Google-Anmeldeseite, wenn
+    // die Web App nicht öffentlich bereitgestellt ist).
+    showSheetStatus('✗ Not saved – no readable answer from Google Sheets (check connection / deployment).', false);
+    return;
+  }
+  if(!json || !json.ok){
+    const err = (json && json.error) || 'unknown error';
+    if(err === 'Unauthorized'){
+      forgetAppsScriptToken();       // Token wurde rotiert → beim nächsten Mal neu fragen
+      showSheetStatus('✗ Not saved – access token rejected. Click Save again to enter the new token.', false);
+    } else {
+      showSheetStatus('✗ Not saved – ' + err, false);
+    }
+    return;
+  }
+  // Erst JETZT gilt es als gespeichert.
+  window._lastModifiedOnLoad = newTs;
+  window._loadedProject      = data['Projektname'];
+  showSheetStatus('✓ Saved to Google Sheets (' + (json.action || 'saved') + ')!', true);
 }
 
 // ── LOAD FROM GOOGLE SHEETS ───────────────────────────────────────────────────
