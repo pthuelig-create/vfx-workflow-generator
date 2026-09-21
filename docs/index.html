@@ -1875,7 +1875,37 @@ ${spNotes?`
 // ── GOOGLE SHEETS CONFIG ──────────────────────────────────────────────────────
 // Paste your deployed Google Apps Script Web App URL here (without the token):
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynOoRj4_y7peFSJqlKBbijpakC-URRSSFKqvS7MLcfRAjwcATkJ55ZwGR4hZy8nUQ_aQ/exec';
-const APPS_SCRIPT_TOKEN = 'jP2ZiHta@6ax';
+// ── ZUGANGSTOKEN ──────────────────────────────────────────────────────────────
+// Die Seite ist öffentlich, deshalb steht der Token NICHT im Quelltext.
+// Er wird einmal abgefragt, gegen die Web App geprüft und nur in DIESEM Browser
+// (localStorage) gemerkt. Er liegt serverseitig in den Script Properties.
+const TOKEN_STORE_KEY = 'vfx_wf_token';
+
+function forgetAppsScriptToken(){
+  try{ localStorage.removeItem(TOKEN_STORE_KEY); }catch(e){}
+}
+
+async function getAppsScriptToken(){
+  let tok = '';
+  try{ tok = localStorage.getItem(TOKEN_STORE_KEY) || ''; }catch(e){}
+  if(tok) return tok;
+
+  tok = (prompt('Access token for the Google Sheet (asked once, remembered in this browser):') || '').trim();
+  if(!tok) return '';
+
+  // Prüfen, bevor er gemerkt wird – ein Tippfehler soll nicht "gespeichert" aussehen.
+  try{
+    const r = await fetch(APPS_SCRIPT_URL + '?token=' + encodeURIComponent(tok) + '&action=list',
+                          { method:'POST', mode:'cors' });
+    const j = await r.json();
+    if(!j.ok){ showSheetStatus('✗ Token rejected.', false); return ''; }
+  }catch(e){
+    showSheetStatus('✗ Could not verify token – check connection.', false);
+    return '';
+  }
+  try{ localStorage.setItem(TOKEN_STORE_KEY, tok); }catch(e){}
+  return tok;
+}
 
 // ── COLLECT SHEET DATA ────────────────────────────────────────────────────────
 // Maps EVERY form field to a dedicated Google Sheet column – full round-trip.
@@ -2073,6 +2103,8 @@ async function saveToSheets(){
     showSheetStatus('⚠ No Apps Script URL configured – see README.', false);
     return;
   }
+  const tok = await getAppsScriptToken();
+  if(!tok) return;
 
   // ── CONFLICT CHECK ────────────────────────────────────────────────────────
   // If we previously loaded this project, check whether someone else has saved
@@ -2081,7 +2113,7 @@ async function saveToSheets(){
     try {
       showSheetStatus('⏳ Checking for conflicts…', true);
       const chkUrl = APPS_SCRIPT_URL
-        + '?token='   + encodeURIComponent(APPS_SCRIPT_TOKEN)
+        + '?token='   + encodeURIComponent(tok)
         + '&action=load'
         + '&project=' + encodeURIComponent(data['Projektname']);
       const chkResp = await fetch(chkUrl, { method:'POST', mode:'cors' });
@@ -2109,7 +2141,7 @@ async function saveToSheets(){
   const newTs = new Date().toISOString();
   data['_last_modified'] = newTs;
   showSheetStatus('⏳ Saving to Google Sheets…', true);
-  const url = APPS_SCRIPT_URL + '?token=' + encodeURIComponent(APPS_SCRIPT_TOKEN);
+  const url = APPS_SCRIPT_URL + '?token=' + encodeURIComponent(tok);
   fetch(url, {
     method  : 'POST',
     mode    : 'no-cors',           // Google Apps Script requires no-cors for cross-origin POST
@@ -2136,15 +2168,18 @@ async function loadFromSheets(){
     showSheetStatus('⚠ No Apps Script URL configured.', false);
     return;
   }
+  const tok = await getAppsScriptToken();
+  if(!tok) return;
   showSheetStatus('⏳ Loading from Google Sheets…', true);
   const url = APPS_SCRIPT_URL
-    + '?token='   + encodeURIComponent(APPS_SCRIPT_TOKEN)
+    + '?token='   + encodeURIComponent(tok)
     + '&action=load'
     + '&project=' + encodeURIComponent(projName);
   try {
     const resp = await fetch(url, { method:'POST', mode:'cors' });
     const json = await resp.json();
     if(!json.ok){
+      if(json.error === 'Unauthorized') forgetAppsScriptToken();   // Token wurde rotiert → neu fragen
       showSheetStatus('✗ ' + (json.error || 'Project not found in Sheet'), false);
       return;
     }

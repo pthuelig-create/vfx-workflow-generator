@@ -579,7 +579,7 @@ input,select,textarea{font-family:inherit;font-size:12px}
       </div>
     </div>
 
-    <div id="nm_info_box" class="info-box">🎬 VFX-Shots werden nach dem Shot-Namensschema gemarkert: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot).</div>
+    <div id="nm_info_box" class="info-box">🎬 VFX shots are marked using the shot naming scheme: <strong>PROJ_E101_001_010</strong> (Show Code + Episode + Scene + Shot).</div>
 
     <div id="nm_standard_scene_info" class="info-box" style="margin-top:14px">
       📌 <strong>Scene = Scene number</strong> from the screenplay / script (3 digits, e.g. 001, 042, 115). <strong>Shot</strong> = shot number within that scene, in steps of 10. Version numbers must be unique and never reused. QT and EXR always share the same version number.
@@ -1189,16 +1189,17 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
   const cr = parseInt(cutRange)||50;
   const st = parseInt(scanTail)||sh;
 
-  // Frame numbers (absolute, starting from 1001 as VFX handle start)
-  const scanHeadStart = 1001 - vh - sh;
-  const vfxHeadStart  = 1001 - vh;
-  const cutStart      = 1001;
-  const cutEnd        = 1000 + cr;
-  const vfxTailStart  = 1001 + cr;
-  const vfxTailEnd    = 1000 + cr + vh;
-  const scanTailStart = 1001 + cr + vh;
-  const scanTailEnd   = 1000 + cr + vh + st;
-  const slateFrame    = 1000;
+  // Frame numbers (absolute): hd_start = first VFX handle frame, slate = hd_start - 1
+  const hdStart       = parseInt(gv('hd_start')) || 1001;
+  const slateFrame    = hdStart - 1;
+  const scanHeadStart = hdStart - sh;
+  const vfxHeadStart  = hdStart;
+  const cutStart      = hdStart + vh;
+  const cutEnd        = hdStart + vh + cr - 1;
+  const vfxTailStart  = hdStart + vh + cr;
+  const vfxTailEnd    = hdStart + vh + cr + vh - 1;
+  const scanTailStart = hdStart + vh + cr + vh;
+  const scanTailEnd   = hdStart + vh + cr + vh + st - 1;
 
   // Column widths proportional (total parts)
   const total = (sh||0) + vh + cr + vh + (st||0);
@@ -1243,7 +1244,7 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
 
   const ppFrameCellsFixed =
     (sh?`<td class="ppd-scan">${scanHeadStart} … ${scanHeadEnd}</td>`:'') +
-    `<td class="ppd-vfx">${vfxHeadStart} … 1000</td>` +
+    `<td class="ppd-vfx">${vfxHeadStart} … ${vfxHeadStart + vh - 1}</td>` +
     `<td class="ppd-cut">${cutStart} … ${cutEnd}</td>` +
     `<td class="ppd-vfx">${vfxTailStart} … ${vfxTailEnd}</td>` +
     (st?`<td class="ppd-scan">${scanTailStart} … ${scanTailEnd}</td>`:'');
@@ -1263,7 +1264,7 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
 
   const subFrameCells =
     `<td class="ppd-slate">${slateFrame}</td>` +
-    `<td class="ppd-vfx">${vfxHeadStart} … 1000</td>` +
+    `<td class="ppd-vfx">${vfxHeadStart} … ${vfxHeadStart + vh - 1}</td>` +
     `<td class="ppd-cut">${cutStart} … ${cutEnd}</td>` +
     `<td class="ppd-vfx">${vfxTailStart} … ${vfxTailEnd}</td>`;
 
@@ -1288,7 +1289,7 @@ function buildPlatePullDiagram(scanHead, vfxH, cutRange, scanTail){
     </tbody>
   </table>
 </div>
-<p class="note" style="margin-top:6px">Slate = Frame 1000 (1 frame before VFX handle head). VFX Handles: ${vh} frames. Cut Range: ${cr} frames.${sh?' Scan Handles Head: '+sh+' frames.':''}${st?' Scan Handles Tail: '+st+' frames.':''}</p>`;
+<p class="note" style="margin-top:6px">Slate = Frame ${slateFrame} (1 frame before VFX handle head). VFX Handles: ${vh} frames. Cut Range: ${cr} frames. FFOA: ${cutStart}.${sh?' Scan Handles Head: '+sh+' frames.':''}${st?' Scan Handles Tail: '+st+' frames.':''}</p>`;
 }
 
 // ── DATA COLLECTORS ──────────────────────────────────────────────────────────
@@ -1603,7 +1604,7 @@ ${extraCams.length>0?`
       <tr><td>Format</td><td>${colExr}</td></tr>
       <tr><td>Color Space</td><td>${vdExrCS}</td></tr>
       <tr><td>Resolution</td><td>${vdExrRes||'Same as source'}</td></tr>
-      <tr><td>Handles</td><td>No handles – picture lock frame range</td></tr>
+      <tr><td>Handles</td><td>${hdFinal}</td></tr>
       <tr><td>Source TC</td><td>Original source TC preserved – do not modify or strip</td></tr>
       <tr><td>Source Filename</td><td>Original clip/plate name preserved in EXR metadata</td></tr>
       <tr><td>Retimes</td><td>Applied and baked in</td></tr>
@@ -1638,7 +1639,7 @@ ${showFor(['ED','VND','DI'])?`
 <div class="sh1">03 · Naming Convention <span class="aud-badge b-ed">ED</span><span class="aud-badge b-vnd">VND</span><span class="aud-badge b-di">DI</span></div>
 
 <div class="sh2">Marker Naming <span class="aud-badge b-ed">ED</span></div>
-<p class="sh-p">${nmSimple?'VFX-Shots werden nach dem Shot-Namensschema gemarkert (Code + Shot):':'VFX-Shots werden in der Avid/Premiere-Timeline nach dem Shot-Namensschema gemarkert:'}</p>
+<p class="sh-p">${nmSimple?'VFX shots are marked using the shot naming scheme (Code + Shot):':'VFX shots are marked in the Avid/Premiere timeline using the shot naming scheme:'}</p>
 <p class="sh-p" style="margin-bottom:6px">${markerNamingViz}</p>
 <p class="sh-p note">Example: <span class="mono">${markerNamingExTxt}</span></p>
 
@@ -1753,7 +1754,7 @@ ${showFor(['VND'])?`
   <tbody>
     <tr><td class="lbl">H264 / MP4 Preview</td><td>${vdH2C} · ${vdH2R} · ${vdH2CS}</td></tr>
     <tr><td class="lbl">DNxHD MXF (Editorial)</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
-    <tr><td class="lbl">EXR</td><td>Main plate with retimes applied · no handles</td></tr>
+    <tr><td class="lbl">EXR</td><td>Main plate with retimes applied · ${hdFinal}</td></tr>
   </tbody>
 </table>
 
@@ -1765,7 +1766,7 @@ ${showFor(['VND'])?`
     ${vndBurnIns.length?`<tr><td class="lbl">Preview Burn-Ins</td><td colspan="2">${vndBurnIns.join(' · ')}</td></tr>`:''}
     <tr><td class="lbl">Mini Cuts</td><td>MP4 / MOV</td><td>At least one shot before and after reviewed range – on request</td></tr>
     <tr><td class="lbl">Editorial</td><td>DNxHD MXF</td><td>${vdDnx} · ${vdDnxCont} · ${vdDnxRes} · ${vdDnxCS}</td></tr>
-    <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · no handles${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
+    <tr><td class="lbl">Final EXR</td><td>EXR Sequence</td><td>${colExr} · ${vdExrCS} · ${vdExrRes||'see incoming spec'} · ${hdFinal}${vdExrWhen==='every_version' ? ' · <strong>required with every submission</strong>' : ' · <strong>only when Proposed as Final or Director Approved</strong>'}</td></tr>
     <tr><td class="lbl">Alpha / Mattes</td><td colspan="2">${vdAlpha} – required for: screen inserts, sky replacements, bg inserts, set extensions, full CG</td></tr>
     <tr><td class="lbl">Submission Sheet</td><td>.csv</td><td>Shot Name · Version Name · Scope of Work · Vendor · Submitting For · Notes</td></tr>
   </tbody>
@@ -1874,7 +1875,37 @@ ${spNotes?`
 // ── GOOGLE SHEETS CONFIG ──────────────────────────────────────────────────────
 // Paste your deployed Google Apps Script Web App URL here (without the token):
 const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbynOoRj4_y7peFSJqlKBbijpakC-URRSSFKqvS7MLcfRAjwcATkJ55ZwGR4hZy8nUQ_aQ/exec';
-const APPS_SCRIPT_TOKEN = 'jP2ZiHta@6ax';
+// ── ZUGANGSTOKEN ──────────────────────────────────────────────────────────────
+// Die Seite ist öffentlich, deshalb steht der Token NICHT im Quelltext.
+// Er wird einmal abgefragt, gegen die Web App geprüft und nur in DIESEM Browser
+// (localStorage) gemerkt. Er liegt serverseitig in den Script Properties.
+const TOKEN_STORE_KEY = 'vfx_wf_token';
+
+function forgetAppsScriptToken(){
+  try{ localStorage.removeItem(TOKEN_STORE_KEY); }catch(e){}
+}
+
+async function getAppsScriptToken(){
+  let tok = '';
+  try{ tok = localStorage.getItem(TOKEN_STORE_KEY) || ''; }catch(e){}
+  if(tok) return tok;
+
+  tok = (prompt('Access token for the Google Sheet (asked once, remembered in this browser):') || '').trim();
+  if(!tok) return '';
+
+  // Prüfen, bevor er gemerkt wird – ein Tippfehler soll nicht "gespeichert" aussehen.
+  try{
+    const r = await fetch(APPS_SCRIPT_URL + '?token=' + encodeURIComponent(tok) + '&action=list',
+                          { method:'POST', mode:'cors' });
+    const j = await r.json();
+    if(!j.ok){ showSheetStatus('✗ Token rejected.', false); return ''; }
+  }catch(e){
+    showSheetStatus('✗ Could not verify token – check connection.', false);
+    return '';
+  }
+  try{ localStorage.setItem(TOKEN_STORE_KEY, tok); }catch(e){}
+  return tok;
+}
 
 // ── COLLECT SHEET DATA ────────────────────────────────────────────────────────
 // Maps EVERY form field to a dedicated Google Sheet column – full round-trip.
@@ -2072,6 +2103,8 @@ async function saveToSheets(){
     showSheetStatus('⚠ No Apps Script URL configured – see README.', false);
     return;
   }
+  const tok = await getAppsScriptToken();
+  if(!tok) return;
 
   // ── CONFLICT CHECK ────────────────────────────────────────────────────────
   // If we previously loaded this project, check whether someone else has saved
@@ -2080,7 +2113,7 @@ async function saveToSheets(){
     try {
       showSheetStatus('⏳ Checking for conflicts…', true);
       const chkUrl = APPS_SCRIPT_URL
-        + '?token='   + encodeURIComponent(APPS_SCRIPT_TOKEN)
+        + '?token='   + encodeURIComponent(tok)
         + '&action=load'
         + '&project=' + encodeURIComponent(data['Projektname']);
       const chkResp = await fetch(chkUrl, { method:'POST', mode:'cors' });
@@ -2108,7 +2141,7 @@ async function saveToSheets(){
   const newTs = new Date().toISOString();
   data['_last_modified'] = newTs;
   showSheetStatus('⏳ Saving to Google Sheets…', true);
-  const url = APPS_SCRIPT_URL + '?token=' + encodeURIComponent(APPS_SCRIPT_TOKEN);
+  const url = APPS_SCRIPT_URL + '?token=' + encodeURIComponent(tok);
   fetch(url, {
     method  : 'POST',
     mode    : 'no-cors',           // Google Apps Script requires no-cors for cross-origin POST
@@ -2135,15 +2168,18 @@ async function loadFromSheets(){
     showSheetStatus('⚠ No Apps Script URL configured.', false);
     return;
   }
+  const tok = await getAppsScriptToken();
+  if(!tok) return;
   showSheetStatus('⏳ Loading from Google Sheets…', true);
   const url = APPS_SCRIPT_URL
-    + '?token='   + encodeURIComponent(APPS_SCRIPT_TOKEN)
+    + '?token='   + encodeURIComponent(tok)
     + '&action=load'
     + '&project=' + encodeURIComponent(projName);
   try {
     const resp = await fetch(url, { method:'POST', mode:'cors' });
     const json = await resp.json();
     if(!json.ok){
+      if(json.error === 'Unauthorized') forgetAppsScriptToken();   // Token wurde rotiert → neu fragen
       showSheetStatus('✗ ' + (json.error || 'Project not found in Sheet'), false);
       return;
     }
